@@ -1,0 +1,11 @@
+Package: AffiXcan
+Title: A functional approach to impute GReX
+Version: 0.0.0.9000
+Authors@R: person("Alessandro", "Lussana", email = "alessandro.lussana@protonmail.com", role = c("aut", "cre"))
+Description: Impute a GReX (Genetically Regulated Expression) for a set of genes in a sample of individuals, using a method based on the Total Binding Affinity (TBA). Statistical models to impute GReX can be trained with a training dataset where the real total expression values are known.
+Depends: R (>= 3.5)
+License: GPL-3
+Imports: MultiAssayExperiment, SummarizedExperiment, doMC, plyr
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.1.0
