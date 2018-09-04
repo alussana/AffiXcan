@@ -4,6 +4,10 @@ output:
   html_document:
     df_print: paged
   pdf_document: default
+vignette: >
+  %\VignetteIndexEntry{AffiXcan}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 ---
 
 This package includes a set of functions to train and to apply statistical models to estimate GReX (genetically regulated expression). 

@@ -6,6 +6,8 @@ Description: Impute a GReX (Genetically Regulated Expression) for a set of genes
 Depends: R (>= 3.5)
 License: GPL-3
 Imports: MultiAssayExperiment, SummarizedExperiment, doMC, plyr
+Suggests: knitr
 Encoding: UTF-8
 LazyData: true
+VignetteBuilder: knitr
 RoxygenNote: 6.1.0
