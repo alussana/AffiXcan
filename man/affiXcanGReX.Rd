@@ -20,6 +20,7 @@ A SummarizedExperiment object containing the imputed GReX values
 Compute a GReX from variables and their coefficients for a set of genes
 }
 \examples{
+\dontrun{
 trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan")
 
@@ -42,4 +43,5 @@ cores=2)
 bs <- training$bs
 
 exprmatrix <- affiXcanGReX(bs=bs, pcs=pcs, cores=1)
+}
 }

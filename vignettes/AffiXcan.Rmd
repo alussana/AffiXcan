@@ -49,7 +49,7 @@ tba <- updateObject(tba)
 names(assays(tba))
 ```
 
-__assays(tba)__ returns a list of 9 matrices, each of which contains the log<sub>2</sub>(TBA) values for a different regulatory region. The matrices must be named with unambiguous identifiers of the regulatory regions. For illustrative purposes a small portion of the TBA matrix of the region named "ENSG00000139269.2" is displayed below. Rows are individual's IDs and columns are PWMs:
+__assays(tba)__ returns a list of 4 matrices, each of which contains the log<sub>2</sub>(TBA) values for a different regulatory region. The matrices must be named with unambiguous identifiers of the regulatory regions. For illustrative purposes a small portion of the TBA matrix of the region named "ENSG00000139269.2" is displayed below. Rows are individual's IDs and columns are PWMs:
 
 ```{r}
 assays(tba)$ENSG00000139269.2[1:5,1:4]

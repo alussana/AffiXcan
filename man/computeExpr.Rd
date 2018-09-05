@@ -30,6 +30,7 @@ imputed GReX values
 Compute the imputed GReX for a certain gene on a set of individuals
 }
 \examples{
+\dontrun{
 trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan")
 
@@ -52,4 +53,5 @@ cores=1)
 bs <- training$bs
 
 exprmatrix <- computeExpr(bs=bs, pcs=pcs)
+}
 }

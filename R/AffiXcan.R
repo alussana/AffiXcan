@@ -333,6 +333,7 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan")
 #'
@@ -355,6 +356,7 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
 #' bs <- training$bs
 #'
 #' exprmatrix <- affiXcanGReX(bs=bs, pcs=pcs, cores=1)
+#' }
 affiXcanGReX <- function(bs, pcs, cores) {
     if (as.numeric(cores > 1)) {
         doParallel::registerDoParallel(cores)
@@ -399,7 +401,7 @@ affiXcanGReX <- function(bs, pcs, cores) {
 #'     according to the param varExplained
 #' @export
 #'
-#' @examples 
+#' @examples
 #' tbaMatrixMAE <- readRDS(system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan"))
 #'
@@ -632,6 +634,7 @@ computeBs <- function(assocRegions, pca, expr, covariates) {
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan")
 #'
@@ -654,6 +657,7 @@ computeBs <- function(assocRegions, pca, expr, covariates) {
 #' bs <- training$bs
 #'
 #' exprmatrix <- computeExpr(bs=bs, pcs=pcs)
+#' }
 computeExpr <- function(bs, pcs) {
 
     tryCatch (
