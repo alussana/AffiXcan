@@ -45,7 +45,7 @@
 #'
 #'    correctedP: The p value after the benjamini-hochberg correction for
 #'    multiple testing, retrived using p.adjust(pvalues, method="BH")
-#' @import MultiAssayExperiment SummarizedExperiment doMC plyr
+#' @import MultiAssayExperiment SummarizedExperiment doParallel plyr
 #' @export
 #'
 #' @examples
@@ -83,7 +83,7 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov,
 #' @param cores An integer >0; if cores=1 processes will not be parallelized
 #'
 #' @return A SummarizedExperiment object containing imputed GReX values
-#' @import MultiAssayExperiment SummarizedExperiment doMC plyr
+#' @import MultiAssayExperiment SummarizedExperiment doParallel plyr
 #' @export
 #'
 #' @examples
@@ -134,7 +134,7 @@ affiXcanImpute <- function(tbaPaths, pca, bs, scale, cores) {
 #'
 #'    pcs: A matrix containing the principal components values selected
 #'    according to the param varExplained
-#' @import MultiAssayExperiment doMC plyr
+#' @import MultiAssayExperiment doParallel plyr
 #' @export
 #'
 #' @examples
@@ -155,7 +155,7 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores) {
         gc()
 
         if (as.numeric(cores) > 1) {
-            doMC::registerDoMC(cores)
+            doParallel::registerDoParallel(cores)
             newPca <- plyr::llply(.data=tbaMatrix, .fun=computePca,
                 varExplained, scale, .parallel = TRUE)
         } else {
@@ -184,7 +184,7 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores) {
 #' @return A list of matrices containing the principal components values of TBA
 #' for each region; each object of the list is named after the
 #' MultiAssayExperiment object from which it derives
-#' @import MultiAssayExperiment doMC plyr
+#' @import MultiAssayExperiment doParallel plyr
 #' @export
 #'
 #' @examples
@@ -220,7 +220,7 @@ affiXcanPcs <- function(tbaPaths, pca, scale, cores) {
         gc()
 
         if (as.numeric(cores) > 1) {
-            doMC::registerDoMC(cores)
+            doParallel::registerDoParallel(cores)
             newPcs <- plyr::llply(.data=regionsList, .fun=computePcs, tbaMatrix,
                 scale, pca, .parallel = TRUE)
         } else {
@@ -265,7 +265,7 @@ affiXcanPcs <- function(tbaPaths, pca, scale, cores) {
 #'
 #'    correctedP: The p value after the benjamini-hochberg correction for
 #'    multiple testing, retrived using p.adjust(pvalues, method="BH")
-#' @import SummarizedExperiment doMC plyr
+#' @import SummarizedExperiment doParallel plyr
 #' @export
 #'
 #' @examples
@@ -292,7 +292,7 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
     rm(expr)
     gc()
     if (as.numeric(cores) > 1) {
-        doMC::registerDoMC(cores)
+        doParallel::registerDoParallel(cores)
         bs <- dlply(.data=regionAssoc, .(EXPRESSED_REGION), .fun=computeBs, pca,
             tDfExprMatrix, cov, .parallel = TRUE)
     } else {
@@ -329,7 +329,7 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
 #' @param cores An integer >0; if cores=1 processes will not be parallelized
 #'
 #' @return A SummarizedExperiment object containing the imputed GReX values
-#' @import SummarizedExperiment doMC plyr
+#' @import SummarizedExperiment doParallel plyr
 #' @export
 #'
 #' @examples
@@ -357,7 +357,7 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
 #' exprmatrix <- affiXcanGReX(bs=bs, pcs=pcs, cores=1)
 affiXcanGReX <- function(bs, pcs, cores) {
     if (as.numeric(cores > 1)) {
-        doMC::registerDoMC(cores)
+        doParallel::registerDoParallel(cores)
         expr <- plyr::llply(.data=bs, .fun=computeExpr, pcs, .parallel = TRUE)
     } else {
         expr <- plyr::llply(.data=bs, .fun=computeExpr, pcs, .parallel = FALSE)
