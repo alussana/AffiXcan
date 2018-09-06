@@ -49,7 +49,7 @@ tba <- updateObject(tba)
 names(assays(tba))
 ```
 
-__assays(tba)__ returns a list of 4 matrices, each of which contains the log<sub>2</sub>(TBA) values for a different regulatory region. The matrices must be named with unambiguous identifiers of the regulatory regions. For illustrative purposes a small portion of the TBA matrix of the region named "ENSG00000139269.2" is displayed below. Rows are individual's IDs and columns are PWMs:
+In this case __assays(tba)__ returns a list of 4 matrices, each of which contains the log<sub>2</sub>(TBA) values for a different regulatory region. The matrices must be named with unambiguous identifiers of the regulatory regions. For illustrative purposes a small portion of the TBA matrix of the region named "ENSG00000139269.2" is displayed below. Rows are individual's IDs and columns are PWMs:
 
 ```{r}
 assays(tba)$ENSG00000139269.2[1:5,1:4]
@@ -99,10 +99,10 @@ TBA values for regulatory regions referring to the population for which we want 
 To apply the models consistently, TBA must be calculated on the same regions and using the same PWM set as done for the training phase. The unambiguous regions' IDs used to name the TBA matrices stored in MultiAssayExperiment objects need to match those used in the training phase.
 
 #### Eigenvectors
-AffiXcan performs a matrix product between TBA values and eigenvectors to obtain the selected principal components that will be used as variables when estimating GReX. Eigenvectors are computed by __affiXcanTrain()__ when performing principal components analysis (PCA) on the training dataset. The user has to specify the object in which PCA results from affiXcanTrain() are stored: if the returning object from affiXcanTrain() is named "training", the object of our interest will be training$pca.
+AffiXcan performs a matrix product between TBA values and eigenvectors to obtain the selected principal components that will be used as variables when estimating GReX. Eigenvectors are computed by __affiXcanTrain()__ when performing principal components analysis (PCA) on the training dataset. The user has to specify the object in which the object in which the results the training phase are stored.
 
-#### Coefficients
-For every gene the selected principal components of the TBA are multiplied by the model's coefficients, previously trained on the training dataset by __affiXcanTrain()__. The user has to specify the object in which the regression models' results from affiXcanTrain() are stored. If the returning object from affiXcanTrain() is named "training", the object of our interest will be training$bs.
+#### Models' Coefficients
+For every gene the selected principal components of the TBA are multiplied by the model's coefficients, previously trained on the training dataset by __affiXcanTrain()__. The user has to specify the object in which the results the training phase are stored.
 
 ### Final Output
 __affiXcanTrain()__ returns a [SummarizedExperiment](https://bioconductor.org/packages/release/bioc/html/SummarizedExperiment.html) object containing a matrix with the imputed GReX values. To access it we can use assays()$GReX as shown below. Here it is a toy example to impute the GReX of a single gene in a cohort of 115 individuals. In the GReX matrix the rows are genes and the columns are individual's IDs:
@@ -119,7 +119,7 @@ assay <- "values"
 training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay, tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates, varExplained=80, scale=TRUE, cores=1)
 
 testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds", package="AffiXcan")
-exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths, pca=training$pca, bs=training$bs, scale=TRUE, cores=1)
+exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths, affiXcanTraining=training, scale=TRUE, cores=1)
 
 grexMatrix <- assays(exprmatrix)$GReX
 as.data.frame(grexMatrix)[,1:5]

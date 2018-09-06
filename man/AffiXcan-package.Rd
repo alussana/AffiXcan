@@ -46,6 +46,6 @@ varExplained=80, scale=TRUE, cores=1)
 testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 package="AffiXcan")
 
-exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths, pca=training$pca,
-bs=training$bs, scale=TRUE, cores=1)
+exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths, affiXcanTraining=training,
+scale=TRUE, cores=1)
 }

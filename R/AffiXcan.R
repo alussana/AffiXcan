@@ -72,12 +72,11 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov,
     return(affiXcanTraining)
 }
 
-#' Impute a GReX for each gene for whom a model was generated
+#' Impute a GReX for each gene for which a model was generated
 #'
 #' @param tbaPaths A vector of strings, which are the paths to
 #' MultiAssayExperiment RDS files containing the tba values
-#' @param pca A list, which is the returningObject$pca from affiXcanTrain()
-#' @param bs A list, which is the returningObject$bs from affiXcanTrain()
+#' @param affiXcanTraining The returning object from affiXcanTrain()
 #' @param scale A logical; if scale=FALSE the TBA values will be only centered,
 #' not scaled before performing PCA
 #' @param cores An integer >0; if cores=1 processes will not be parallelized
@@ -103,13 +102,13 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov,
 #' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 #' package="AffiXcan")
 #' 
-#' exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths, pca=training$pca,
-#' bs=training$bs, scale=TRUE, cores=1)
-affiXcanImpute <- function(tbaPaths, pca, bs, scale, cores) {
+#' exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths,
+#' affiXcanTraining=training, scale=TRUE, cores=1)
+affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale, cores) {
     cat("AffiXcan: Computing principal components ...", "\n")
-    pcs <- affiXcanPcs(tbaPaths, pca, scale, cores)
+    pcs <- affiXcanPcs(tbaPaths, affiXcanTraining, scale, cores)
     cat("AffiXcan: Imputing GReX values ...", "\n")
-    exprmatrix <- affiXcanGReX(bs, pcs, cores)
+    exprmatrix <- affiXcanGReX(affiXcanTraining, pcs, cores)
     cat("AffiXcan: Done!", "\n")
     return(exprmatrix)
 }
@@ -149,7 +148,7 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores) {
     for(path in tbaPaths) {
 
         tbaMatrixMAE <- readRDS(path)
-    	updateObject(tbaMatrixMAE)
+    	tbaMatrixMAE <- updateObject(tbaMatrixMAE)
         tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
         rm(tbaMatrixMAE)
         gc()
@@ -176,7 +175,7 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores) {
 #'
 #' @param tbaPaths A vector of strings, which are the paths to
 #' MultiAssayExperiment RDS files containing the tba values
-#' @param pca A list, which is the returningObject$pca from affiXcanTrain()
+#' @param affiXcanTraining The returning object from affiXcanTrain()
 #' @param scale A logical; if scale=FALSE the TBA values will be only centered,
 #' not scaled before performing PCA
 #' @param cores An integer >0; if cores=1 processes will not be parallelized
@@ -204,16 +203,17 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores) {
 #' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 #' package="AffiXcan")
 #' 
-#' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, pca=training$pca, scale=TRUE,
-#' cores=1)
-affiXcanPcs <- function(tbaPaths, pca, scale, cores) {
+#' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
+#' scale=TRUE, cores=1)
+affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, cores) {
 
     pcs <- list()
 
     for(path in tbaPaths) {
 
+        pca <- affiXcanTraining$pca
         tbaMatrixMAE <- readRDS(path)
-    	updateObject(tbaMatrixMAE)
+    	tbaMatrixMAE <- updateObject(tbaMatrixMAE)
         tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
         regionsList <- setNames(as.list(names(tbaMatrix)), names(tbaMatrix))
         rm(tbaMatrixMAE)
@@ -324,8 +324,8 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
 
 #' Compute a GReX from variables and their coefficients for a set of genes
 #'
-#' @param bs A list. which is the returningObject$bs from affiXcanTrain()
-#' @param pcs A list, which is the returningObject from affiXcanPcs()
+#' @param affiXcanTraining The returning object from affiXcanTrain()
+#' @param pcs A list, which is the returning object from affiXcanPcs()
 #' @param cores An integer >0; if cores=1 processes will not be parallelized
 #'
 #' @return A SummarizedExperiment object containing the imputed GReX values
@@ -350,14 +350,15 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
 #' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 #' package="AffiXcan")
 #'
-#' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, pca=training$pca, scale=TRUE,
-#' cores=2)
+#' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
+#' scale=TRUE, cores=2)
 #'
 #' bs <- training$bs
 #'
-#' exprmatrix <- affiXcanGReX(bs=bs, pcs=pcs, cores=1)
+#' exprmatrix <- affiXcanGReX(affiXcanTraining=training, cores=1)
 #' }
-affiXcanGReX <- function(bs, pcs, cores) {
+affiXcanGReX <- function(affiXcanTraining, pcs, cores) {
+    bs <- affiXcanTraining$bs
     if (as.numeric(cores > 1)) {
         doParallel::registerDoParallel(cores)
         expr <- plyr::llply(.data=bs, .fun=computeExpr, pcs, .parallel = TRUE)
@@ -651,8 +652,8 @@ computeBs <- function(assocRegions, pca, expr, covariates) {
 #' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 #' package="AffiXcan")
 #' 
-#' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, pca=training$pca, scale=TRUE,
-#' cores=1)
+#' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
+#' scale=TRUE, cores=1)
 #'
 #' bs <- training$bs
 #'

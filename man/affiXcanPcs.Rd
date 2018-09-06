@@ -4,13 +4,13 @@
 \alias{affiXcanPcs}
 \title{Compute PCs in MultiAssayExperiment objects using eigenvectors given by user}
 \usage{
-affiXcanPcs(tbaPaths, pca, scale, cores)
+affiXcanPcs(tbaPaths, affiXcanTraining, scale, cores)
 }
 \arguments{
 \item{tbaPaths}{A vector of strings, which are the paths to
 MultiAssayExperiment RDS files containing the tba values}
 
-\item{pca}{A list, which is the returningObject$pca from affiXcanTrain()}
+\item{affiXcanTraining}{The returning object from affiXcanTrain()}
 
 \item{scale}{A logical; if scale=FALSE the TBA values will be only centered,
 not scaled before performing PCA}
@@ -42,6 +42,6 @@ varExplained=80, scale=TRUE, cores=1)
 testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 package="AffiXcan")
 
-pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, pca=training$pca, scale=TRUE,
-cores=1)
+pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
+scale=TRUE, cores=1)
 }

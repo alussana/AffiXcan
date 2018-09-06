@@ -4,12 +4,12 @@
 \alias{affiXcanGReX}
 \title{Compute a GReX from variables and their coefficients for a set of genes}
 \usage{
-affiXcanGReX(bs, pcs, cores)
+affiXcanGReX(affiXcanTraining, pcs, cores)
 }
 \arguments{
-\item{bs}{A list. which is the returningObject$bs from affiXcanTrain()}
+\item{affiXcanTraining}{The returning object from affiXcanTrain()}
 
-\item{pcs}{A list, which is the returningObject from affiXcanPcs()}
+\item{pcs}{A list, which is the returning object from affiXcanPcs()}
 
 \item{cores}{An integer >0; if cores=1 processes will not be parallelized}
 }
@@ -37,11 +37,11 @@ varExplained=80, scale=TRUE, cores=1)
 testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 package="AffiXcan")
 
-pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, pca=training$pca, scale=TRUE,
-cores=2)
+pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
+scale=TRUE, cores=2)
 
 bs <- training$bs
 
-exprmatrix <- affiXcanGReX(bs=bs, pcs=pcs, cores=1)
+exprmatrix <- affiXcanGReX(affiXcanTraining=training, cores=1)
 }
 }

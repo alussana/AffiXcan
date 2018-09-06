@@ -2,17 +2,15 @@
 % Please edit documentation in R/AffiXcan.R
 \name{affiXcanImpute}
 \alias{affiXcanImpute}
-\title{Impute a GReX for each gene for whom a model was generated}
+\title{Impute a GReX for each gene for which a model was generated}
 \usage{
-affiXcanImpute(tbaPaths, pca, bs, scale, cores)
+affiXcanImpute(tbaPaths, affiXcanTraining, scale, cores)
 }
 \arguments{
 \item{tbaPaths}{A vector of strings, which are the paths to
 MultiAssayExperiment RDS files containing the tba values}
 
-\item{pca}{A list, which is the returningObject$pca from affiXcanTrain()}
-
-\item{bs}{A list, which is the returningObject$bs from affiXcanTrain()}
+\item{affiXcanTraining}{The returning object from affiXcanTrain()}
 
 \item{scale}{A logical; if scale=FALSE the TBA values will be only centered,
 not scaled before performing PCA}
@@ -23,7 +21,7 @@ not scaled before performing PCA}
 A SummarizedExperiment object containing imputed GReX values
 }
 \description{
-Impute a GReX for each gene for whom a model was generated
+Impute a GReX for each gene for which a model was generated
 }
 \examples{
 trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
@@ -42,6 +40,6 @@ varExplained=80, scale=TRUE, cores=1)
 testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 package="AffiXcan")
 
-exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths, pca=training$pca,
-bs=training$bs, scale=TRUE, cores=1)
+exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths,
+affiXcanTraining=training, scale=TRUE, cores=1)
 }

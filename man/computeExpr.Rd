@@ -47,8 +47,8 @@ varExplained=80, scale=TRUE, cores=1)
 testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 package="AffiXcan")
 
-pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, pca=training$pca, scale=TRUE,
-cores=1)
+pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
+scale=TRUE, cores=1)
 
 bs <- training$bs
 
