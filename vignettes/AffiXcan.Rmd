@@ -126,7 +126,7 @@ as.data.frame(grexMatrix)[,1:5]
 ```
 
 ### Parallelization
-AffiXcan processes can take a certain amount of time to complete, but all functions support parallelization. The user has to indicate the number of cores that can be used by AffiXcan to parallelize the tasks. [doParallel package](https://www.rdocumentation.org/packages/doParallel/versions/1.0.10) is required for parallelization.
+AffiXcan processes can take a certain amount of time to complete, but all functions support parallelization. The user has to indicate the number of cores that can be used by AffiXcan to parallelize the tasks. [BiocParallel package](https://bioconductor.org/packages/release/bioc/html/BiocParallel.html) is required for parallel evaluation.
 
 ### AffiXcan Performance
 This section has the only purpose to briefly show the predictive performance obtained using AffiXcan in preliminary tests, and its comparison against the multiple-SNP prediction method described in [Gamazon et al.](http://www.nature.com/articles/ng.3367). Much further work, also regarding other datasets, is still in progress.

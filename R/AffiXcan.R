@@ -45,7 +45,7 @@
 #'
 #'    correctedP: The p value after the benjamini-hochberg correction for
 #'    multiple testing, retrived using p.adjust(pvalues, method="BH")
-#' @import MultiAssayExperiment SummarizedExperiment doParallel plyr
+#' @import MultiAssayExperiment SummarizedExperiment BiocParallel
 #' @export
 #'
 #' @examples
@@ -82,7 +82,7 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov,
 #' @param cores An integer >0; if cores=1 processes will not be parallelized
 #'
 #' @return A SummarizedExperiment object containing imputed GReX values
-#' @import MultiAssayExperiment SummarizedExperiment doParallel plyr
+#' @import MultiAssayExperiment SummarizedExperiment BiocParallel
 #' @export
 #'
 #' @examples
@@ -133,7 +133,7 @@ affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale, cores) {
 #'
 #'    pcs: A matrix containing the principal components values selected
 #'    according to the param varExplained
-#' @import MultiAssayExperiment doParallel plyr
+#' @import MultiAssayExperiment BiocParallel 
 #' @export
 #'
 #' @examples
@@ -153,14 +153,9 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores) {
         rm(tbaMatrixMAE)
         gc()
 
-        if (as.numeric(cores) > 1) {
-            doParallel::registerDoParallel(cores)
-            newPca <- plyr::llply(.data=tbaMatrix, .fun=computePca,
-                varExplained, scale, .parallel = TRUE)
-        } else {
-            newPca <- plyr::llply(.data=tbaMatrix, .fun=computePca,
-                varExplained, scale, .parallel = FALSE)
-        }
+        bpParam <- SnowParam(workers = cores)
+        newPca <- BiocParallel::bplapply(X=tbaMatrix, FUN=computePca,
+        varExplained, scale, BPPARAM=bpParam)
 
         pca <- append(pca, newPca)
         rm(tbaMatrix)
@@ -183,7 +178,7 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores) {
 #' @return A list of matrices containing the principal components values of TBA
 #' for each region; each object of the list is named after the
 #' MultiAssayExperiment object from which it derives
-#' @import MultiAssayExperiment doParallel plyr
+#' @import MultiAssayExperiment BiocParallel
 #' @export
 #'
 #' @examples
@@ -218,16 +213,11 @@ affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, cores) {
         regionsList <- setNames(as.list(names(tbaMatrix)), names(tbaMatrix))
         rm(tbaMatrixMAE)
         gc()
-
-        if (as.numeric(cores) > 1) {
-            doParallel::registerDoParallel(cores)
-            newPcs <- plyr::llply(.data=regionsList, .fun=computePcs, tbaMatrix,
-                scale, pca, .parallel = TRUE)
-        } else {
-            newPcs <- plyr::llply(.data=regionsList, .fun=computePcs, tbaMatrix,
-                scale, pca, .parallel = FALSE)
-        }
-
+        
+        bpParam <- SnowParam(workers = cores)
+        newPcs <- BiocParallel::bplapply(X=regionsList, FUN=computePcs,
+            tbaMatrix, scale, pca, BPPARAM=bpParam)
+        
         pcs <- append(pcs, newPcs)
         rm(tbaMatrix)
         rm(regionsList)
@@ -265,7 +255,7 @@ affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, cores) {
 #'
 #'    correctedP: The p value after the benjamini-hochberg correction for
 #'    multiple testing, retrived using p.adjust(pvalues, method="BH")
-#' @import SummarizedExperiment doParallel plyr
+#' @import SummarizedExperiment BiocParallel
 #' @export
 #'
 #' @examples
@@ -291,14 +281,16 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
     tDfExprMatrix<-t(as.data.frame(expr))
     rm(expr)
     gc()
-    if (as.numeric(cores) > 1) {
-        doParallel::registerDoParallel(cores)
-        bs <- dlply(.data=regionAssoc, .(EXPRESSED_REGION), .fun=computeBs, pca,
-            tDfExprMatrix, cov, .parallel = TRUE)
-    } else {
-        bs <- dlply(.data=regionAssoc, .(EXPRESSED_REGION), .fun=computeBs, pca,
-            tDfExprMatrix, cov, .parallel = FALSE)
-    }
+
+    bpParam <- SnowParam(workers = cores)
+    
+    expressedRegions <- as.vector(unique(regionAssoc$EXPRESSED_REGION))
+    assocList <- BiocParallel::bplapply(X=expressedRegions, FUN=assoc2list,
+        regionAssoc, BPPARAM=bpParam)
+    names(assocList) <- expressedRegions
+
+    bs <- BiocParallel::bplapply(X=assocList, FUN=computeBs, pca,
+        tDfExprMatrix, cov, BPPARAM=bpParam)
 
     ## Remove ensg for which the model is NA
     for(i in names(bs)) {
@@ -322,6 +314,27 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
     return(bs)
 }
 
+#' Reorganize associations table in a list
+#'
+#' @param gene A string; the name of an expressed gene
+#' @param regionAssoc A data.frame with the associations between regulatory
+#' regions and expressed genes, and with colnames = c("REGULATORY_REGION",
+#' "EXPRESSED_REGION")
+#'
+#' @return A list of data frames, each of which has the same structure of the
+#' param regionAssoc, except that contains the information relative to one
+#' expressed gene
+#' @export
+#'
+#' @examples
+#' data(regionAssoc)
+#' expressedRegions <- as.list(as.vector(unique(regionAssoc$EXPRESSED_REGION)))
+#' gene <- expressedRegions[[1]]
+#' assocList <- assoc2list(gene, regionAssoc)
+assoc2list <- function(gene, regionAssoc) {
+    return(regionAssoc[regionAssoc$EXPRESSED_REGION==gene,])
+}
+
 #' Compute a GReX from variables and their coefficients for a set of genes
 #'
 #' @param affiXcanTraining The returning object from affiXcanTrain()
@@ -329,7 +342,7 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
 #' @param cores An integer >0; if cores=1 processes will not be parallelized
 #'
 #' @return A SummarizedExperiment object containing the imputed GReX values
-#' @import SummarizedExperiment doParallel plyr
+#' @import SummarizedExperiment BiocParallel 
 #' @export
 #'
 #' @examples
@@ -359,12 +372,9 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
 #' }
 affiXcanGReX <- function(affiXcanTraining, pcs, cores) {
     bs <- affiXcanTraining$bs
-    if (as.numeric(cores > 1)) {
-        doParallel::registerDoParallel(cores)
-        expr <- plyr::llply(.data=bs, .fun=computeExpr, pcs, .parallel = TRUE)
-    } else {
-        expr <- plyr::llply(.data=bs, .fun=computeExpr, pcs, .parallel = FALSE)
-    }
+    
+    bpParam <- SnowParam(workers = cores)
+    expr <- BiocParallel::bplapply(X=bs, FUN=computeExpr, pcs, BPPARAM=bpParam)
 
     exprmatrix <- matrix(nrow = nrow(pcs[[1]]), ncol=0)
     rownames(exprmatrix) <- rownames(pcs[[1]])
