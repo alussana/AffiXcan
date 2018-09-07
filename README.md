@@ -1,7 +1,7 @@
 # AffiXcan
 AffiXcan is an R package that includes a set of functions to train and to apply statistical models to estimate GReX (genetically regulated expression).
 
-For usage, please see the package's [vignette](https://mega.nz/#!CDJwGSgR!capMYY_SjdDKRBVxC00Z942Mo2JYBvQ6a65QUtQioao).
+For usage, please see the package's [vignette](https://mega.nz/#!vXx2USzZ!hj_U2EhQDsHO8aZ8l2-22w6Sh_y8F_c56Mj88qkHXjI).
 
 ### What is GReX?
 GReX is the component of gene expression (here defined as the transcript level, e.g RPKM) explained by an individual's genetics.
@@ -18,6 +18,7 @@ Some efforts have been made to develop computational methods to predict GReX fro
 
 [Gamazon et al.](http://www.nature.com/articles/ng.3367) developed a method consisting of multiple-SNP prediction of expression levels, where the estimated GReX for a gene is given by an additive model in which SNPs are the independent variables.
 
-AffiXcan takes into account the contribution of all polymorphisms of given genomic regions that are associated to the expression of a gene. This is done using affinity scores between those regions and a set of transcription factors. A principal component analysis (PCA) is performed on these scores and for each expressed gene a linear model is fitted.
+AffiXcan takes into account the contribution of all polymorphisms of given genomic regions that are associated to the expression of a gene. This is done using affinity scores - [TBA](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0143627) (Total Binding Affinity) - between those regions and a set of transcription factors. A principal component analysis (PCA) is performed on these scores and for each expressed gene a linear model is fitted.
 
-We observed that the GReX of the majority of genes for which AffiXcan manages to generate a significant model is not predictable by the method cited above. Arguably, this is due to the nature of TBA, that allows to take into account the additive small effect of all variants in a genomic region. Furthermore, the goodness of prediction achieved by AffiXcan on both shared and non-shared genes was significantly greater. For brief insights on AffiXcan's results in preliminary tests, see AffiXcan Performance section in the package's [vignette](https://mega.nz/#!CDJwGSgR!capMYY_SjdDKRBVxC00Z942Mo2JYBvQ6a65QUtQioao).
+### AffiXcan Performance
+We observed that the GReX of the majority of genes for which AffiXcan manages to generate a significant model is not predictable by the method cited above. Arguably, this is due to the nature of [TBA](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0143627) score, that allows to take into account the additive small effect of all variants in a genomic region. Furthermore, the goodness of prediction achieved by AffiXcan on both shared and non-shared genes was significantly greater. For brief insights on AffiXcan's results in preliminary tests, see AffiXcan Performance section in the package's [vignette](https://mega.nz/#!vXx2USzZ!hj_U2EhQDsHO8aZ8l2-22w6Sh_y8F_c56Mj88qkHXjI).
