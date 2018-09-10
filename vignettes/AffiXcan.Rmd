@@ -3,12 +3,12 @@ title: "AffiXcan"
 output:
   html_document:
     df_print: paged
-    toc: yes
+    toc: true
   pdf_document: default
-  word_document:
-    toc: yes
-vignette: |
-  %\VignetteIndexEntry{AffiXcan} %\VignetteEngine{knitr::rmarkdown} \usepackage[utf8]{inputenc}
+vignette: >
+  %\VignetteIndexEntry{AffiXcan}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 ---
 
 This package includes a set of functions to train and to apply statistical models to estimate GReX (genetically regulated expression). 
