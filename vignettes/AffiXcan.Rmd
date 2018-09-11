@@ -1,5 +1,8 @@
 ---
 title: "AffiXcan"
+author:
+  name: Alessandro Lussana
+  affiliation: Department of Molecular Biotechnologies and Health Sciences, MBC, University of Turin, Italy
 output:
   html_document:
     df_print: paged
@@ -23,7 +26,7 @@ The abundance of a transcript in a cell is determined by many factors, including
 ### Why GReX?
 The estimation of GReX can be useful to perform TWAS when the real total expression profile is unknown or can not be measured, for example in those tissues - like the brain - that are inaccessible to _in vivo_ safe biopsies, or in ancient genomes. 
 
-GReX can be also exploited to estimate the constitutive susceptibility of a genome to a certain status, whose existence is at least partially influenced by gene expression.
+GReX can be also exploited to estimate the constitutive susceptibility of a genome to a certain status, the existence of which is at least partially influenced by gene expression.
 
 ### Estimate GReX
 Some efforts have been made to develop computational methods to predict GReX from genotype data using mathematical models. 
@@ -149,7 +152,7 @@ In the graph: The R<sup>2</sup> values from AffiXcan's predictions, for the >300
 
 
 ### Predictive Performance Comparison
-Remarkably, the overlap between the genes for which an imputed GReX could be computed by the two methods is only slightly greater than one third (1123) of the amount computed by each method. Arguably, this is due to the implementation of TBA to take into account the contribution of all genetic variants in a regulatory regions, rather then only those SNPs with a greater effect size on gene expression. Supposedly, AffiXcan manages to generate a significant model to estimate GReX in genes whose expression is influenced by many variants each contributing to GReX with a small effect size, where the multiple-SNP prediction method fails to have good statistical predictors.
+Remarkably, the overlap between the genes for which an imputed GReX could be computed by the two methods is only slightly greater than one third (1123) of the amount computed by each method. Arguably, this is due to the implementation of [TBA score](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0143627) to take into account the contribution of all genetic variants in a regulatory regions, rather then only those SNPs with a greater effect size on gene expression. Supposedly, AffiXcan manages to generate a significant model to estimate GReX in genes where the transcriptional expression is influenced by many variants, each contributing to GReX with a small effect size, where the multiple-SNP prediction method fails to have good statistical predictors.
 ![](r_squares_correlation.png)
 In the graph: for each gene for which a GReX could be imputed by both methods, a blue circle is plotted with the coordinates (R<sup>2</sup> from multiple-SNp method's prediction, R<sup>2</sup> from AffiXcan's prediction)
 
