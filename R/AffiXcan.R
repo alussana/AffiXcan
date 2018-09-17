@@ -148,7 +148,7 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores) {
     for(path in tbaPaths) {
 
         tbaMatrixMAE <- readRDS(path)
-    	tbaMatrixMAE <- updateObject(tbaMatrixMAE)
+        tbaMatrixMAE <- updateObject(tbaMatrixMAE)
         tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
         rm(tbaMatrixMAE)
         gc()
@@ -208,7 +208,7 @@ affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, cores) {
 
         pca <- affiXcanTraining$pca
         tbaMatrixMAE <- readRDS(path)
-    	tbaMatrixMAE <- updateObject(tbaMatrixMAE)
+        tbaMatrixMAE <- updateObject(tbaMatrixMAE)
         tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
         regionsList <- setNames(as.list(names(tbaMatrix)), names(tbaMatrix))
         rm(tbaMatrixMAE)
