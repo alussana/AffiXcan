@@ -2,21 +2,24 @@
 title: "AffiXcan"
 author:
   name: Alessandro Lussana
-  affiliation: Department of Molecular Biotechnologies and Health Sciences, MBC, University of Turin, Italy
+  affiliation: >
+    Department of Molecular Biotechnologies and Health Sciences, MBC, University
+    of Turin, Italy
   email: alessandro.lussana@protonmail.com
+abstract: >
+  This package includes a set of functions to train and to apply statistical
+  models to estimate GReX (genetically regulated expression).
+package: AffiXcan 0.99.13
 output:
   BiocStyle::html_document:
     df_print: paged
-    toc: true
+    toc_float: true
   pdf_document: default
 vignette: >
   %\VignetteIndexEntry{AffiXcan}
   %\VignetteEngine{knitr::rmarkdown}
   %\usepackage[utf8]{inputenc}
 ---
-
-This package includes a set of functions to train and to apply statistical
-models to estimate GReX (genetically regulated expression). 
 
 # GReX
 

@@ -3,7 +3,7 @@ AffiXcan is an R package that includes a set of functions to train and to apply
 statistical models to estimate GReX (genetically regulated expression).
 
 For usage, please see the package's
-[vignette](https://mega.nz/#!uX5y3IDR!cFClG3MazNDWs1IfXDLAtap3L6sV4hirwfLMWCNLZJA).
+[vignette](https://mega.nz/#!uW4RRYjJ!loBNzR24ECan2LFLDBmXkekTNtHVbYoBy1iUHmNL1XA).
 
 ### What is GReX?
 GReX is the component of gene expression (here defined as the transcript level,
@@ -53,4 +53,4 @@ variants in a genomic region. Furthermore, the goodness of prediction achieved
 by AffiXcan on both shared and non-shared genes was significantly greater. For
 brief insights on AffiXcan's results in preliminary tests, see AffiXcan
 Performance section in the package's
-[vignette](https://mega.nz/#!uX5y3IDR!cFClG3MazNDWs1IfXDLAtap3L6sV4hirwfLMWCNLZJA).
+[vignette](https://mega.nz/#!uW4RRYjJ!loBNzR24ECan2LFLDBmXkekTNtHVbYoBy1iUHmNL1XA).
