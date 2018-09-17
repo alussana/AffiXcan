@@ -2,8 +2,8 @@
 AffiXcan is an R package that includes a set of functions to train and to apply
 statistical models to estimate GReX (genetically regulated expression).
 
-For usage, please see the package's [vignette](https://mega.nz/\
-#!uX5y3IDR!cFClG3MazNDWs1IfXDLAtap3L6sV4hirwfLMWCNLZJA).
+For usage, please see the package's
+[vignette](https://mega.nz/#!uX5y3IDR!cFClG3MazNDWs1IfXDLAtap3L6sV4hirwfLMWCNLZJA).
 
 ### What is GReX?
 GReX is the component of gene expression (here defined as the transcript level,
@@ -37,20 +37,20 @@ variables.
 
 __AffiXcan__ takes into account the contribution of all polymorphisms of given
 genomic regions that are associated to the expression of a gene. This is done
-using affinity scores - [TBA](https://journals.plos.org/plosone/\
-article?id=10.1371/journal.pone.0143627) (Total Binding Affinity) - between
-those regions and a set of transcription factors. A principal component analysis
-(PCA) is performed on these scores and for each expressed gene a linear model is
-fitted.
+using affinity scores -
+[TBA](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0143627)
+(Total Binding Affinity) - between those regions and a set of transcription
+factors. A principal component analysis (PCA) is performed on these scores and
+for each expressed gene a linear model is fitted.
 
 ### AffiXcan Performance
 We observed that the GReX of the majority of genes for which AffiXcan manages to
 generate a significant model is not predictable by the method cited above.
-Arguably, this is due to the nature of [TBA](https://journals.plos.org/plosone/\
-article?id=10.1371/journal.pone.0143627) score, that allows to take into account
-the additive small effect of all variants in a genomic region. Furthermore, the
-goodness of prediction achieved by AffiXcan on both shared and non-shared genes
-was significantly greater. For brief insights on AffiXcan's results in
-preliminary tests, see AffiXcan Performance section in the package's
-[vignette](https://mega.nz/\
-#!uX5y3IDR!cFClG3MazNDWs1IfXDLAtap3L6sV4hirwfLMWCNLZJA).
+Arguably, this is due to the nature of
+[TBA](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0143627)
+score, that allows to take into account the additive small effect of all
+variants in a genomic region. Furthermore, the goodness of prediction achieved
+by AffiXcan on both shared and non-shared genes was significantly greater. For
+brief insights on AffiXcan's results in preliminary tests, see AffiXcan
+Performance section in the package's
+[vignette](https://mega.nz/#!uX5y3IDR!cFClG3MazNDWs1IfXDLAtap3L6sV4hirwfLMWCNLZJA).
