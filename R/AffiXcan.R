@@ -17,7 +17,7 @@
 #' not scaled before performing PCA
 #' @param cores An integer >0; if cores=1 processes will not be parallelized
 #'
-#' @return A list containing two objects: pca and bs
+#' @return A list containing three objects: pca, bs, regionsCount
 #'
 #' pca: A list containing lists named as the MultiAssayExperiment::experiments()
 #' found in the MultiAssayExperiment objects listed in the param tbaPaths. Each
@@ -45,6 +45,9 @@
 #'
 #'    correctedP: The p value after the benjamini-hochberg correction for
 #'    multiple testing, retrived using p.adjust(pvalues, method="BH")
+#'
+#' regionsCount: An integer, that is the number of genomic regions taken into
+#' account during the training phase
 #' @import MultiAssayExperiment SummarizedExperiment BiocParallel
 #' @export
 #'
@@ -63,11 +66,12 @@
 #' varExplained=80, scale=TRUE, cores=1)
 affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov,
     varExplained, scale, cores) {
+    regionsCount <- overlookRegions(tbaPaths)
     cat("AffiXcan: Performing PCA ...", "\n")
-    pca <- affiXcanPca(tbaPaths, varExplained, scale, cores)
+    pca <- affiXcanPca(tbaPaths, varExplained, scale, cores, regionsCount)
     cat("AffiXcan: Training coefficients ...", "\n")
     bs <- affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov, cores)
-    affiXcanTraining <- list(pca=pca, bs=bs)
+    affiXcanTraining <- list(pca=pca, bs=bs, regionsCount=regionsCount)
     cat("AffiXcan: Done!", "\n")
     return(affiXcanTraining)
 }
@@ -105,12 +109,49 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov,
 #' exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths,
 #' affiXcanTraining=training, scale=TRUE, cores=1)
 affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale, cores) {
+    regionsCount <- overlookRegions(tbaPaths)
+    if(regionsCount!=affiXcanTraining$regionsCount) {
+        warning(cat("The amount of genomic regions included in the training
+                    phase is different from those found in the TBA matrices:\n
+                    TBA in the training set was computed on ",
+                    affiXcanTraining$regionsCount, " regions\n TBA provided in
+                    tbaPaths refers to ", regionsCount, " regions\n"))
+    }
     cat("AffiXcan: Computing principal components ...", "\n")
-    pcs <- affiXcanPcs(tbaPaths, affiXcanTraining, scale, cores)
+    pcs <- affiXcanPcs(tbaPaths, affiXcanTraining, scale, cores, regionsCount)
     cat("AffiXcan: Imputing GReX values ...", "\n")
     exprmatrix <- affiXcanGReX(affiXcanTraining, pcs, cores)
     cat("AffiXcan: Done!", "\n")
     return(exprmatrix)
+}
+
+#' Count the number of genomic regions on which the TBA was computed
+#'
+#' @param tbaPaths, A vector of strings, which are the paths to
+#' MultiAssayExperiment RDS files containing the tba values
+#'
+#' @return An integer, that is the summation of length(assays()) of every
+#' MultiAssayExperiment RDS object indicated in the param tbaPaths
+#' @import MultiAssayExperiment
+#' @export
+#'
+#' @examples
+#' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
+#' package="AffiXcan")
+#'
+#' regionsCount <- overlookRegions(tbaPaths=testingTbaPaths)
+overlookRegions <- function(tbaPaths) {
+
+    regionsCount <- 0 
+    
+    for(path in tbaPaths) {
+        tba <- readRDS(path)
+        assaysNum <- length(assays(tba))
+        regionsCount <- regionsCount + assaysNum
+    }
+
+    return(regionsCount)
+    
 }
 
 #' Perform a PCA on each experiment found in MultiAssayExperiment objects
@@ -123,6 +164,9 @@ affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale, cores) {
 #' @param scale A logical; if scale=FALSE the TBA values will be only centered,
 #' not scaled before performing PCA
 #' @param cores An integer >0; if cores=1 processes will not be parallelized
+#' @param regionsCount An integer, that is the summation of length(assays()) of
+#' every MultiAssayExperiment RDS object indicated in the param tbaPaths; it is
+#' the returning value from overlookRegions()
 #'
 #' @return pca: A list containing lists named as the 
 #' MultiAssayExperiment::experiments() found in the MultiAssayExperiment objects
@@ -139,27 +183,32 @@ affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale, cores) {
 #' @examples
 #' tbaPaths <- system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan")
+#' regionsCount <- overlookRegions(tbaPaths)
 #'
-#' pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE, cores=1)
-affiXcanPca <- function(tbaPaths, varExplained, scale, cores) {
+#' pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE, cores=1,
+#' regionsCount=regionsCount)
+affiXcanPca <- function(tbaPaths, varExplained, scale, cores, regionsCount) {
 
-    pca <- list()
+    pca <- vector("list", regionsCount)
+    index <- 0
 
-    for(path in tbaPaths) {
+    for(i in seq(1,length(tbaPaths))) {
 
-        tbaMatrixMAE <- readRDS(path)
-        tbaMatrixMAE <- updateObject(tbaMatrixMAE)
+        tbaMatrixMAE <- readRDS(tbaPaths[i])
+        #tbaMatrixMAE <- updateObject(tbaMatrixMAE)
         tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
-        rm(tbaMatrixMAE)
-        gc()
 
         bpParam <- SnowParam(workers = cores)
         newPca <- BiocParallel::bplapply(X=tbaMatrix, FUN=computePca,
         varExplained, scale, BPPARAM=bpParam)
 
-        pca <- append(pca, newPca)
-        rm(tbaMatrix)
-        gc()
+        for(l in seq(1,length(newPca))) {
+            pca[index + l] <- newPca[l]
+            names(pca)[index + l] <- names(newPca)[l]
+        }
+
+        index <- index + length(newPca)
+    
     }
 
     return(pca)
@@ -174,6 +223,9 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores) {
 #' @param scale A logical; if scale=FALSE the TBA values will be only centered,
 #' not scaled before performing PCA
 #' @param cores An integer >0; if cores=1 processes will not be parallelized
+#' @param regionsCount An integer, that is the summation of length(assays()) of
+#' every MultiAssayExperiment RDS object indicated in the param tbaPaths; it is
+#' the returning value from overlookRegions()
 #'
 #' @return A list of matrices containing the principal components values of TBA
 #' for each region; each object of the list is named after the
@@ -197,31 +249,35 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores) {
 #'
 #' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 #' package="AffiXcan")
+#'
+#' regionsCount <- overlookRegions(testingTbaPaths)
 #' 
 #' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
-#' scale=TRUE, cores=1)
-affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, cores) {
+#' scale=TRUE, cores=1, regionsCount=regionsCount)
+affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, cores, regionsCount) {
 
-    pcs <- list()
+    pcs <- vector("list", regionsCount)
+    index <- 0
 
-    for(path in tbaPaths) {
+    for(i in seq(1,length(tbaPaths))) {
 
         pca <- affiXcanTraining$pca
-        tbaMatrixMAE <- readRDS(path)
-        tbaMatrixMAE <- updateObject(tbaMatrixMAE)
+        tbaMatrixMAE <- readRDS(tbaPaths[i])
+        #tbaMatrixMAE <- updateObject(tbaMatrixMAE)
         tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
         regionsList <- setNames(as.list(names(tbaMatrix)), names(tbaMatrix))
-        rm(tbaMatrixMAE)
-        gc()
         
         bpParam <- SnowParam(workers = cores)
         newPcs <- BiocParallel::bplapply(X=regionsList, FUN=computePcs,
             tbaMatrix, scale, pca, BPPARAM=bpParam)
         
-        pcs <- append(pcs, newPcs)
-        rm(tbaMatrix)
-        rm(regionsList)
-        gc()
+        for(l in seq(1,length(newPcs))) {
+            pcs[index + l] <- newPcs[l]
+            names(pcs)[index + l] <- names(newPcs)[l]
+        }
+
+        index <- index + length(newPcs)
+    
     }
 
     return(pcs)
@@ -279,8 +335,6 @@ affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, cores) {
 affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
     expr <- SummarizedExperiment::assays(exprMatrix)[[assay]]
     tDfExprMatrix<-t(as.data.frame(expr))
-    rm(expr)
-    gc()
 
     bpParam <- SnowParam(workers = cores)
     
@@ -301,16 +355,17 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
 
     ## Compute multitest pvalue correction (benjamini-hochberg)
     pvalues <- vector("numeric", length=length(bs))
+    
     for(i in seq(1:length(pvalues))) {
         pvalues[[i]] <- bs[[i]]$pval
     }
+    
     multi.test.pvals <- p.adjust(pvalues, method="BH")
+    
     for(i in seq(1:length(bs))) {
         bs[[i]]$correctedP <- multi.test.pvals[[i]]
     }
-    rm(exprMatrix)
-    rm(regionAssoc)
-    gc()
+    
     return(bs)
 }
 
@@ -378,6 +433,7 @@ affiXcanGReX <- function(affiXcanTraining, pcs, cores) {
 
     exprmatrix <- matrix(nrow = nrow(pcs[[1]]), ncol=0)
     rownames(exprmatrix) <- rownames(pcs[[1]])
+    
     for(i in seq(1:length(expr))) {
         if(is.na(expr[[i]][[1]])==FALSE) {
             exprMatrixPart <- matrix(expr[[i]], ncol=1)
@@ -386,10 +442,10 @@ affiXcanGReX <- function(affiXcanTraining, pcs, cores) {
             exprmatrix <- cbind(exprmatrix, exprMatrixPart)
         }
     }
+    
     ## TODO: eventually include a colData given by the user in the SE object
     Summarized.GReX <- SummarizedExperiment(assays=list(GReX=t(exprmatrix)))
-    rm(exprmatrix)
-    gc()
+    
     return(Summarized.GReX)
 }
 
@@ -560,8 +616,10 @@ computePcs <- function(region, tbaMatrix, scale, pca) {
 #' assocRegions <- regionAssoc[regionAssoc$EXPRESSED_REGION==
 #' "ENSG00000256377.1",]
 #'
+#' regionsCount <- overlookRegions(trainingTbaPaths)
+#'
 #' pca <- affiXcanPca(tbaPaths=trainingTbaPaths, varExplained=80, scale=TRUE,
-#' cores=1)
+#' cores=1,regionsCount=regionsCount)
 #'
 #' expr <- SummarizedExperiment::assays(exprMatrix)[[assay]]
 #' expr <- t(as.data.frame(expr))

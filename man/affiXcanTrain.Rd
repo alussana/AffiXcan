@@ -33,7 +33,7 @@ not scaled before performing PCA}
 \item{cores}{An integer >0; if cores=1 processes will not be parallelized}
 }
 \value{
-A list containing two objects: pca and bs
+A list containing three objects: pca, bs, regionsCount
 
 pca: A list containing lists named as the MultiAssayExperiment::experiments()
 found in the MultiAssayExperiment objects listed in the param tbaPaths. Each
@@ -61,6 +61,9 @@ Each of the lists in bs contains four objects:
 
    correctedP: The p value after the benjamini-hochberg correction for
    multiple testing, retrived using p.adjust(pvalues, method="BH")
+
+regionsCount: An integer, that is the number of genomic regions taken into
+account during the training phase
 }
 \description{
 Train the model needed to impute a GReX for each gene

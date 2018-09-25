@@ -48,8 +48,10 @@ assay <- "values"
 assocRegions <- regionAssoc[regionAssoc$EXPRESSED_REGION==
 "ENSG00000256377.1",]
 
+regionsCount <- overlookRegions(trainingTbaPaths)
+
 pca <- affiXcanPca(tbaPaths=trainingTbaPaths, varExplained=80, scale=TRUE,
-cores=1)
+cores=1,regionsCount=regionsCount)
 
 expr <- SummarizedExperiment::assays(exprMatrix)[[assay]]
 expr <- t(as.data.frame(expr))

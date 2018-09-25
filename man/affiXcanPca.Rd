@@ -4,7 +4,7 @@
 \alias{affiXcanPca}
 \title{Perform a PCA on each experiment found in MultiAssayExperiment objects}
 \usage{
-affiXcanPca(tbaPaths, varExplained, scale, cores)
+affiXcanPca(tbaPaths, varExplained, scale, cores, regionsCount)
 }
 \arguments{
 \item{tbaPaths}{A vector of strings, which are the paths to
@@ -18,6 +18,10 @@ the principal components selected to fit the models must explain at least
 not scaled before performing PCA}
 
 \item{cores}{An integer >0; if cores=1 processes will not be parallelized}
+
+\item{regionsCount}{An integer, that is the summation of length(assays()) of
+every MultiAssayExperiment RDS object indicated in the param tbaPaths; it is
+the returning value from overlookRegions()}
 }
 \value{
 pca: A list containing lists named as the 
@@ -36,6 +40,8 @@ Perform a PCA on each experiment found in MultiAssayExperiment objects
 \examples{
 tbaPaths <- system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan")
+regionsCount <- overlookRegions(tbaPaths)
 
-pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE, cores=1)
+pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE, cores=1,
+regionsCount=regionsCount)
 }

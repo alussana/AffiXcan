@@ -4,7 +4,7 @@
 \alias{affiXcanPcs}
 \title{Compute PCs in MultiAssayExperiment objects using eigenvectors given by user}
 \usage{
-affiXcanPcs(tbaPaths, affiXcanTraining, scale, cores)
+affiXcanPcs(tbaPaths, affiXcanTraining, scale, cores, regionsCount)
 }
 \arguments{
 \item{tbaPaths}{A vector of strings, which are the paths to
@@ -16,6 +16,10 @@ MultiAssayExperiment RDS files containing the tba values}
 not scaled before performing PCA}
 
 \item{cores}{An integer >0; if cores=1 processes will not be parallelized}
+
+\item{regionsCount}{An integer, that is the summation of length(assays()) of
+every MultiAssayExperiment RDS object indicated in the param tbaPaths; it is
+the returning value from overlookRegions()}
 }
 \value{
 A list of matrices containing the principal components values of TBA
@@ -42,6 +46,8 @@ varExplained=80, scale=TRUE, cores=1)
 testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 package="AffiXcan")
 
+regionsCount <- overlookRegions(testingTbaPaths)
+
 pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
-scale=TRUE, cores=1)
+scale=TRUE, cores=1, regionsCount=regionsCount)
 }
