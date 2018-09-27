@@ -5,7 +5,7 @@
 \title{Train the model needed to impute a GReX for each gene}
 \usage{
 affiXcanTrain(exprMatrix, assay, tbaPaths, regionAssoc, cov, varExplained,
-  scale, cores)
+  scale, BPPARAM = bpparam())
 }
 \arguments{
 \item{exprMatrix}{A SummarizedExperiment object containing expression data}
@@ -30,7 +30,9 @@ the principal components selected to fit the models must explain at least
 \item{scale}{A logical; if scale=FALSE the TBA values will be only centered,
 not scaled before performing PCA}
 
-\item{cores}{An integer >0; if cores=1 processes will not be parallelized}
+\item{BPPARAM}{A BiocParallelParam object. Default is bpparam(). For
+details on BiocParallelParam virtual base class see 
+browseVignettes("BiocParallel")}
 }
 \value{
 A list containing three objects: pca, bs, regionsCount
@@ -80,5 +82,5 @@ assay <- "values"
 
 training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-varExplained=80, scale=TRUE, cores=1)
+varExplained=80, scale=TRUE)
 }

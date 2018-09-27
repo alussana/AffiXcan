@@ -4,7 +4,8 @@
 \alias{affiXcanPcs}
 \title{Compute PCs in MultiAssayExperiment objects using eigenvectors given by user}
 \usage{
-affiXcanPcs(tbaPaths, affiXcanTraining, scale, cores, regionsCount)
+affiXcanPcs(tbaPaths, affiXcanTraining, scale, regionsCount,
+  BPPARAM = bpparam())
 }
 \arguments{
 \item{tbaPaths}{A vector of strings, which are the paths to
@@ -15,11 +16,13 @@ MultiAssayExperiment RDS files containing the tba values}
 \item{scale}{A logical; if scale=FALSE the TBA values will be only centered,
 not scaled before performing PCA}
 
-\item{cores}{An integer >0; if cores=1 processes will not be parallelized}
-
 \item{regionsCount}{An integer, that is the summation of length(assays()) of
 every MultiAssayExperiment RDS object indicated in the param tbaPaths; it is
 the returning value from overlookRegions()}
+
+\item{BPPARAM}{A BiocParallelParam object. Default is bpparam(). For
+details on BiocParallelParam virtual base class see 
+browseVignettes("BiocParallel")}
 }
 \value{
 A list of matrices containing the principal components values of TBA
@@ -41,7 +44,7 @@ assay <- "values"
 
 training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-varExplained=80, scale=TRUE, cores=1)
+varExplained=80, scale=TRUE)
 
 testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 package="AffiXcan")
@@ -49,5 +52,5 @@ package="AffiXcan")
 regionsCount <- overlookRegions(testingTbaPaths)
 
 pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
-scale=TRUE, cores=1, regionsCount=regionsCount)
+scale=TRUE, regionsCount=regionsCount)
 }

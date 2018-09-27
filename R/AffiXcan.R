@@ -15,7 +15,9 @@
 #' 80 percent of variation of TBA values
 #' @param scale A logical; if scale=FALSE the TBA values will be only centered,
 #' not scaled before performing PCA
-#' @param cores An integer >0; if cores=1 processes will not be parallelized
+#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
+#' details on BiocParallelParam virtual base class see 
+#' browseVignettes("BiocParallel")
 #'
 #' @return A list containing three objects: pca, bs, regionsCount
 #'
@@ -63,14 +65,14 @@
 #'
 #' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 #' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-#' varExplained=80, scale=TRUE, cores=1)
+#' varExplained=80, scale=TRUE)
 affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov,
-    varExplained, scale, cores) {
+    varExplained, scale, BPPARAM=bpparam()) {
     regionsCount <- overlookRegions(tbaPaths)
     cat("AffiXcan: Performing PCA ...", "\n")
-    pca <- affiXcanPca(tbaPaths, varExplained, scale, cores, regionsCount)
+    pca <- affiXcanPca(tbaPaths, varExplained, scale, regionsCount, BPPARAM)
     cat("AffiXcan: Training coefficients ...", "\n")
-    bs <- affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov, cores)
+    bs <- affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov, BPPARAM)
     affiXcanTraining <- list(pca=pca, bs=bs, regionsCount=regionsCount)
     cat("AffiXcan: Done!", "\n")
     return(affiXcanTraining)
@@ -83,7 +85,9 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov,
 #' @param affiXcanTraining The returning object from affiXcanTrain()
 #' @param scale A logical; if scale=FALSE the TBA values will be only centered,
 #' not scaled before performing PCA
-#' @param cores An integer >0; if cores=1 processes will not be parallelized
+#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
+#' details on BiocParallelParam virtual base class see 
+#' browseVignettes("BiocParallel")
 #'
 #' @return A SummarizedExperiment object containing imputed GReX values
 #' @import MultiAssayExperiment SummarizedExperiment BiocParallel
@@ -101,14 +105,15 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov,
 #'
 #' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 #' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-#' varExplained=80, scale=TRUE, cores=1)
+#' varExplained=80, scale=TRUE)
 #'
 #' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 #' package="AffiXcan")
 #' 
 #' exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths,
-#' affiXcanTraining=training, scale=TRUE, cores=1)
-affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale, cores) {
+#' affiXcanTraining=training, scale=TRUE)
+affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale,
+                           BPPARAM=bpparam()) {
     regionsCount <- overlookRegions(tbaPaths)
     if(regionsCount!=affiXcanTraining$regionsCount) {
         warning(cat("The amount of genomic regions included in the training
@@ -118,9 +123,9 @@ affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale, cores) {
                     tbaPaths refers to ", regionsCount, " regions\n"))
     }
     cat("AffiXcan: Computing principal components ...", "\n")
-    pcs <- affiXcanPcs(tbaPaths, affiXcanTraining, scale, cores, regionsCount)
+    pcs <- affiXcanPcs(tbaPaths, affiXcanTraining, scale, regionsCount, BPPARAM)
     cat("AffiXcan: Imputing GReX values ...", "\n")
-    exprmatrix <- affiXcanGReX(affiXcanTraining, pcs, cores)
+    exprmatrix <- affiXcanGReX(affiXcanTraining, pcs, BPPARAM)
     cat("AffiXcan: Done!", "\n")
     return(exprmatrix)
 }
@@ -163,10 +168,12 @@ overlookRegions <- function(tbaPaths) {
 #' 80 percent of variation of TBA values
 #' @param scale A logical; if scale=FALSE the TBA values will be only centered,
 #' not scaled before performing PCA
-#' @param cores An integer >0; if cores=1 processes will not be parallelized
 #' @param regionsCount An integer, that is the summation of length(assays()) of
 #' every MultiAssayExperiment RDS object indicated in the param tbaPaths; it is
 #' the returning value from overlookRegions()
+#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
+#' details on BiocParallelParam virtual base class see 
+#' browseVignettes("BiocParallel")
 #'
 #' @return pca: A list containing lists named as the 
 #' MultiAssayExperiment::experiments() found in the MultiAssayExperiment objects
@@ -185,9 +192,10 @@ overlookRegions <- function(tbaPaths) {
 #' package="AffiXcan")
 #' regionsCount <- overlookRegions(tbaPaths)
 #'
-#' pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE, cores=1,
+#' pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE,
 #' regionsCount=regionsCount)
-affiXcanPca <- function(tbaPaths, varExplained, scale, cores, regionsCount) {
+affiXcanPca <- function(tbaPaths, varExplained, scale, regionsCount,
+                        BPPARAM=bpparam()) {
 
     pca <- vector("list", regionsCount)
     index <- 0
@@ -195,12 +203,10 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores, regionsCount) {
     for(i in seq(1,length(tbaPaths))) {
 
         tbaMatrixMAE <- readRDS(tbaPaths[i])
-        #tbaMatrixMAE <- updateObject(tbaMatrixMAE)
         tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
 
-        bpParam <- SnowParam(workers = cores)
         newPca <- BiocParallel::bplapply(X=tbaMatrix, FUN=computePca,
-        varExplained, scale, BPPARAM=bpParam)
+        varExplained, scale, BPPARAM=BPPARAM)
 
         for(l in seq(1,length(newPca))) {
             pca[index + l] <- newPca[l]
@@ -222,10 +228,12 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores, regionsCount) {
 #' @param affiXcanTraining The returning object from affiXcanTrain()
 #' @param scale A logical; if scale=FALSE the TBA values will be only centered,
 #' not scaled before performing PCA
-#' @param cores An integer >0; if cores=1 processes will not be parallelized
 #' @param regionsCount An integer, that is the summation of length(assays()) of
 #' every MultiAssayExperiment RDS object indicated in the param tbaPaths; it is
 #' the returning value from overlookRegions()
+#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
+#' details on BiocParallelParam virtual base class see 
+#' browseVignettes("BiocParallel")
 #'
 #' @return A list of matrices containing the principal components values of TBA
 #' for each region; each object of the list is named after the
@@ -245,7 +253,7 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores, regionsCount) {
 #'
 #' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 #' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-#' varExplained=80, scale=TRUE, cores=1)
+#' varExplained=80, scale=TRUE)
 #'
 #' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 #' package="AffiXcan")
@@ -253,8 +261,9 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, cores, regionsCount) {
 #' regionsCount <- overlookRegions(testingTbaPaths)
 #' 
 #' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
-#' scale=TRUE, cores=1, regionsCount=regionsCount)
-affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, cores, regionsCount) {
+#' scale=TRUE, regionsCount=regionsCount)
+affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, regionsCount,
+                        BPPARAM=bpparam()) {
 
     pcs <- vector("list", regionsCount)
     index <- 0
@@ -267,9 +276,8 @@ affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, cores, regionsCount) 
         tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
         regionsList <- setNames(as.list(names(tbaMatrix)), names(tbaMatrix))
         
-        bpParam <- SnowParam(workers = cores)
         newPcs <- BiocParallel::bplapply(X=regionsList, FUN=computePcs,
-            tbaMatrix, scale, pca, BPPARAM=bpParam)
+            tbaMatrix, scale, pca, BPPARAM=BPPARAM)
         
         for(l in seq(1,length(newPcs))) {
             pcs[index + l] <- newPcs[l]
@@ -293,7 +301,9 @@ affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, cores, regionsCount) 
 #' "EXPRESSED_REGION")
 #' @param pca A list, which is the returningObject$pca from affiXcanPca()
 #' @param cov A data.frame with covariates values for the population structure
-#' @param cores An integer >0; if cores=1 processes will not be parallelized
+#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
+#' details on BiocParallelParam virtual base class see 
+#' browseVignettes("BiocParallel")
 #'
 #' @return A list containing lists named as the REGULATORY_REGIONS found in the
 #' param regionAssoc that have a correspondent name in the param pca.
@@ -326,25 +336,24 @@ affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, cores, regionsCount) 
 #'
 #' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 #' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-#' varExplained=80, scale=TRUE, cores=1)
+#' varExplained=80, scale=TRUE)
 #'
 #' pca <- training$pca 
 #'
 #' bs <- affiXcanBs(exprMatrix=exprMatrix, assay=assay, regionAssoc=regionAssoc,
-#' pca=pca, cov=trainingCovariates, cores=1)
-affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov, cores) {
+#' pca=pca, cov=trainingCovariates)
+affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov,
+                       BPPARAM=bpparam()) {
     expr <- SummarizedExperiment::assays(exprMatrix)[[assay]]
     tDfExprMatrix<-t(as.data.frame(expr))
 
-    bpParam <- SnowParam(workers = cores)
-    
     expressedRegions <- as.vector(unique(regionAssoc$EXPRESSED_REGION))
     assocList <- BiocParallel::bplapply(X=expressedRegions, FUN=assoc2list,
-        regionAssoc, BPPARAM=bpParam)
+        regionAssoc, BPPARAM=BPPARAM)
     names(assocList) <- expressedRegions
 
     bs <- BiocParallel::bplapply(X=assocList, FUN=computeBs, pca,
-        tDfExprMatrix, cov, BPPARAM=bpParam)
+        tDfExprMatrix, cov, BPPARAM=BPPARAM)
 
     ## Remove ensg for which the model is NA
     for(i in names(bs)) {
@@ -394,7 +403,9 @@ assoc2list <- function(gene, regionAssoc) {
 #'
 #' @param affiXcanTraining The returning object from affiXcanTrain()
 #' @param pcs A list, which is the returning object from affiXcanPcs()
-#' @param cores An integer >0; if cores=1 processes will not be parallelized
+#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
+#' details on BiocParallelParam virtual base class see 
+#' browseVignettes("BiocParallel")
 #'
 #' @return A SummarizedExperiment object containing the imputed GReX values
 #' @import SummarizedExperiment BiocParallel 
@@ -413,23 +424,22 @@ assoc2list <- function(gene, regionAssoc) {
 #'
 #' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 #' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-#' varExplained=80, scale=TRUE, cores=1)
+#' varExplained=80, scale=TRUE)
 #'
 #' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 #' package="AffiXcan")
 #'
 #' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
-#' scale=TRUE, cores=2)
+#' scale=TRUE)
 #'
 #' bs <- training$bs
 #'
-#' exprmatrix <- affiXcanGReX(affiXcanTraining=training, cores=1)
+#' exprmatrix <- affiXcanGReX(affiXcanTraining=training, pcs=pcs)
 #' }
-affiXcanGReX <- function(affiXcanTraining, pcs, cores) {
+affiXcanGReX <- function(affiXcanTraining, pcs, BPPARAM=bpparam()) {
     bs <- affiXcanTraining$bs
     
-    bpParam <- SnowParam(workers = cores)
-    expr <- BiocParallel::bplapply(X=bs, FUN=computeExpr, pcs, BPPARAM=bpParam)
+    expr <- BiocParallel::bplapply(X=bs, FUN=computeExpr, pcs, BPPARAM=BPPARAM)
 
     exprmatrix <- matrix(nrow = nrow(pcs[[1]]), ncol=0)
     rownames(exprmatrix) <- rownames(pcs[[1]])
@@ -550,7 +560,7 @@ computePca <- function(data, varExplained, scale) {
 #'
 #' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 #' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-#' varExplained=80, scale=TRUE, cores=1)
+#' varExplained=80, scale=TRUE)
 #'
 #' region <- "ENSG00000256377.1"
 #'
@@ -619,7 +629,7 @@ computePcs <- function(region, tbaMatrix, scale, pca) {
 #' regionsCount <- overlookRegions(trainingTbaPaths)
 #'
 #' pca <- affiXcanPca(tbaPaths=trainingTbaPaths, varExplained=80, scale=TRUE,
-#' cores=1,regionsCount=regionsCount)
+#' regionsCount=regionsCount)
 #'
 #' expr <- SummarizedExperiment::assays(exprMatrix)[[assay]]
 #' expr <- t(as.data.frame(expr))
@@ -715,13 +725,13 @@ computeBs <- function(assocRegions, pca, expr, covariates) {
 #'
 #' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 #' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-#' varExplained=80, scale=TRUE, cores=1)
+#' varExplained=80, scale=TRUE)
 #'
 #' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 #' package="AffiXcan")
 #' 
 #' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
-#' scale=TRUE, cores=1)
+#' scale=TRUE)
 #'
 #' bs <- training$bs
 #'

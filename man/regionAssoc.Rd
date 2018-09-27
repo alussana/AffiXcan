@@ -4,14 +4,29 @@
 \name{regionAssoc}
 \alias{regionAssoc}
 \title{Associations between regulatory regions and expressed genes}
-\format{An object of class \code{"data.frame"}}
+\format{An object of class \code{data.frame}}
 \usage{
 data(regionAssoc)
 }
 \description{
 Toy data used in examples to describe affiXcanTrain() and affiXcanImpute() 
-functions; it has two columns: for every EXPRESSED_REGION are listed the
-associated REGULATORY_REGION(s)
+functions.
+}
+\details{
+The object consists in a data.frame with two columns: for every
+"EXPRESSED_REGION" are listed the associated "REGULATORY_REGION"(s).
+For the illustrative purpose there are only two expressed genes:
+"ENSG00000139269.2" and "ENSG00000256377.1" (the same names are used in the
+SummarizedExperiment object containing the expression matrix, see
+help(exprMatrix) ).
+
+For every gene, the associated regulatory regions were retrieved among the
+enhancers predicted by preSTIGE, a tool developed by O. Corradin et al.
+(\url{https://genome.cshlp.org/content/24/1/1.full}), in EBV-transformed
+lymphocytes cell lines. The name of the regulatory region being identical to
+the name of the expressed gene means that the regulatory region refers to
+a genomic window that spans at least for 2 Kbp and includes the most upstream
+TSS of the gene.
 }
 \examples{
 data(regionAssoc)

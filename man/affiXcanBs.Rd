@@ -4,7 +4,7 @@
 \alias{affiXcanBs}
 \title{Fit a linear model and compute ANOVA p value}
 \usage{
-affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov, cores)
+affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov, BPPARAM = bpparam())
 }
 \arguments{
 \item{exprMatrix}{A SummarizedExperiment object containing expression data}
@@ -20,7 +20,9 @@ regions and expressed genes, and with colnames = c("REGULATORY_REGION",
 
 \item{cov}{A data.frame with covariates values for the population structure}
 
-\item{cores}{An integer >0; if cores=1 processes will not be parallelized}
+\item{BPPARAM}{A BiocParallelParam object. Default is bpparam(). For
+details on BiocParallelParam virtual base class see 
+browseVignettes("BiocParallel")}
 }
 \value{
 A list containing lists named as the REGULATORY_REGIONS found in the
@@ -55,10 +57,10 @@ assay <- "values"
 
 training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-varExplained=80, scale=TRUE, cores=1)
+varExplained=80, scale=TRUE)
 
 pca <- training$pca 
 
 bs <- affiXcanBs(exprMatrix=exprMatrix, assay=assay, regionAssoc=regionAssoc,
-pca=pca, cov=trainingCovariates, cores=1)
+pca=pca, cov=trainingCovariates)
 }

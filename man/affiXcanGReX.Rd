@@ -4,14 +4,16 @@
 \alias{affiXcanGReX}
 \title{Compute a GReX from variables and their coefficients for a set of genes}
 \usage{
-affiXcanGReX(affiXcanTraining, pcs, cores)
+affiXcanGReX(affiXcanTraining, pcs, BPPARAM = bpparam())
 }
 \arguments{
 \item{affiXcanTraining}{The returning object from affiXcanTrain()}
 
 \item{pcs}{A list, which is the returning object from affiXcanPcs()}
 
-\item{cores}{An integer >0; if cores=1 processes will not be parallelized}
+\item{BPPARAM}{A BiocParallelParam object. Default is bpparam(). For
+details on BiocParallelParam virtual base class see 
+browseVignettes("BiocParallel")}
 }
 \value{
 A SummarizedExperiment object containing the imputed GReX values
@@ -32,16 +34,16 @@ assay <- "values"
 
 training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-varExplained=80, scale=TRUE, cores=1)
+varExplained=80, scale=TRUE)
 
 testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 package="AffiXcan")
 
 pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
-scale=TRUE, cores=2)
+scale=TRUE)
 
 bs <- training$bs
 
-exprmatrix <- affiXcanGReX(affiXcanTraining=training, cores=1)
+exprmatrix <- affiXcanGReX(affiXcanTraining=training, pcs=pcs)
 }
 }

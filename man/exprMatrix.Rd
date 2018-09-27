@@ -3,13 +3,23 @@
 \docType{data}
 \name{exprMatrix}
 \alias{exprMatrix}
-\title{Expression data of four genes for 230 individuals}
-\format{An object of class \code{"SummarizedExperiment"}.}
+\title{Expression data of two genes for 229 individuals}
+\format{An object of class \code{SummarizedExperiment}.}
+\source{
+\url{https://www.ebi.ac.uk/arrayexpress/files/E-GEUV-3/}
+}
 \usage{
 data(exprMatrix)
 }
 \description{
-Toy dataset used in examples to describe affiXcanTrain() function
+Toy dataset used in examples to describe affiXcanTrain() function.
+}
+\details{
+The data consist in a SummarizedExperiment object that contains a matrix of
+expression values (RPKM) of two randomly chosen genes ("ENSG00000139269.2"
+and "ENSG00000256377.1") for 229 individuals of european descent. The data
+was retrieved subsetting the RNA-sequencing data of EBV-transformed
+lymphocytes from the GEUVADIS public dataset (see 'source')
 }
 \examples{
 library(SummarizedExperiment)

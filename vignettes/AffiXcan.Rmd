@@ -9,7 +9,7 @@ author:
 abstract: >
   This package includes a set of functions to train and to apply statistical
   models to estimate GReX (genetically regulated expression).
-package: AffiXcan 0.99.13
+package: AffiXcan 0.99.14
 output:
   BiocStyle::html_document:
     df_print: paged
@@ -20,6 +20,43 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\usepackage[utf8]{inputenc}
 ---
+
+# Background
+Understanding and predicting how genetic variation influences gene
+expression is of great interest in modern biological and medical sciences.
+Taking advantage of whole genome sequencing (WGS) and RNA sequencing (RNA-seq)
+technologies many efforts have been made to link single nucleotide polymorphisms
+(SNPs) to expression variation in cells and tissues.
+
+The present methods to estimate the genetic contribution to gene expression do
+not take into account functional information in identifying _expression
+quantitative trait loci_ (eQTL), i.e. those genetic variants that contribute to
+explaining the variation of gene expression. Relying on SNPs as predictors
+allows to make significant models of gene expression only for those genes for
+which SNPs with a fairly good effect size exist, but this condition is not
+satisfied for the majority of genes, despite their expression having a non-zero
+heritability (h<sup>2</sup>). To address this issue, new, different strategies
+to analyze genetic variability of regulatory regions and their influence on
+transcription are needed.
+
+__AffiXcan__ (total binding AFFInity-eXpression sCANner) implements a functional
+approach based on the
+[TBA](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0143627)
+(Total Binding Affinity) score to make statistical models of gene expression,
+being able to make significant predictions on genes for which SNPs with strong
+effect size are absent. Furthermore, such a functional approach allows to make
+mechanistic interpretations in terms of transcription factors binding events
+that drive differential transcriptional expression. These features are of
+considerable importance for eQTL discovery and to improve the capability to
+estimate a [GReX](#grex) (genetically regulated expression) for a greater number
+of genes, at the same time giving insights on the possible molecular mechanisms
+that are involved in differential expression of genes.
+
+In the effort to grant reproducibility and resources' availability, AffiXcan
+package includes also the functions to train the GReX models. It is our purpose
+to expand and enhance these functions and, in the future, to provide data
+packages to impute GReX on many different tissues with ready-to-use trained
+models.
 
 # GReX
 
@@ -72,7 +109,7 @@ by AffiXcan on both shared and non-shared genes was significantly greater. For
 brief insights on AffiXcan's results in preliminary tests, see 
 [AffiXcan performance](#affixcan-performance) section.
 
-# AffiXcan workflow
+# AffiXcan Workflow
 AffiXcan's estimation of GReX is based on a functional approach that involves a
 score to quantify the affinity between a PWM (position weight matrix) and a DNA
 segment: the [TBA](https://journals.plos.org/plosone/article?id=10.1371/\
@@ -225,12 +262,12 @@ assay <- "values"
 
 training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
     tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-    varExplained=80, scale=TRUE, cores=1)
+    varExplained=80, scale=TRUE)
 
 testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
     package="AffiXcan")
 exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths,
-    affiXcanTraining=training, scale=TRUE, cores=1)
+    affiXcanTraining=training, scale=TRUE)
 
 grexMatrix <- assays(exprmatrix)$GReX
 as.data.frame(grexMatrix)[,1:5]
@@ -238,10 +275,13 @@ as.data.frame(grexMatrix)[,1:5]
 
 ## Parallelization
 AffiXcan processes can take a certain amount of time to complete, but all
-functions support parallelization. The user has to indicate the number of cores
-that can be used by AffiXcan to parallelize the tasks.
-[BiocParallel package](https://bioconductor.org/packages/release/bioc/html/\
-BiocParallel.html) is required for parallel evaluation.
+functions support parallelization. [BiocParallel package](https://\
+bioconductor.org/packages/release/bioc/html/BiocParallel.html) is required for
+parallel evaluation.
+
+The user can construct a BiocParallelParam object and pass it as the BPPARAM
+argument when calling __affiXcanTrain()__ or __affiXcanImpute()__, or leave 
+BPPARAM as default for automatic parallel evaluation.
 
 # AffiXcan Performance
 This section has the only purpose to briefly show the predictive performance
@@ -288,14 +328,14 @@ computed by the two methods is only slightly greater than one third (1123) of
 the amount computed by each method. Arguably, this is due to the implementation
 of [TBA score](https://journals.plos.org/plosone/article?id=10.1371/journal.\
 pone.0143627) to take into account the contribution of all genetic variants in
-a regulatory regions, rather then only those SNPs with a greater effect size on
+a regulatory region, rather then only those SNPs with a greater effect size on
 gene expression. Supposedly, AffiXcan manages to generate a significant model
 to estimate GReX in genes where the transcriptional expression is influenced by
 many variants, each contributing to GReX with a small effect size, where the
 multiple-SNP prediction method fails to have good statistical predictors.
 ![](r_squares_correlation.png)
 In the graph: for each gene for which a GReX could be imputed by both methods,
-a blue circle is plotted with the coordinates (R<sup>2</sup> from multiple-SNp
+a blue circle is plotted with the coordinates (R<sup>2</sup> from multiple-SNP
 method's prediction, R<sup>2</sup> from AffiXcan's prediction)
 
 Observing the squared correlation (R<sup>2</sup>) between the imputed GReX

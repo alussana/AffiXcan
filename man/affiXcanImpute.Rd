@@ -4,7 +4,7 @@
 \alias{affiXcanImpute}
 \title{Impute a GReX for each gene for which a model was generated}
 \usage{
-affiXcanImpute(tbaPaths, affiXcanTraining, scale, cores)
+affiXcanImpute(tbaPaths, affiXcanTraining, scale, BPPARAM = bpparam())
 }
 \arguments{
 \item{tbaPaths}{A vector of strings, which are the paths to
@@ -15,7 +15,9 @@ MultiAssayExperiment RDS files containing the tba values}
 \item{scale}{A logical; if scale=FALSE the TBA values will be only centered,
 not scaled before performing PCA}
 
-\item{cores}{An integer >0; if cores=1 processes will not be parallelized}
+\item{BPPARAM}{A BiocParallelParam object. Default is bpparam(). For
+details on BiocParallelParam virtual base class see 
+browseVignettes("BiocParallel")}
 }
 \value{
 A SummarizedExperiment object containing imputed GReX values
@@ -35,11 +37,11 @@ assay <- "values"
 
 training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-varExplained=80, scale=TRUE, cores=1)
+varExplained=80, scale=TRUE)
 
 testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 package="AffiXcan")
 
 exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths,
-affiXcanTraining=training, scale=TRUE, cores=1)
+affiXcanTraining=training, scale=TRUE)
 }

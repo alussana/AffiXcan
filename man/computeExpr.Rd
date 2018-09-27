@@ -42,13 +42,13 @@ assay <- "values"
 
 training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-varExplained=80, scale=TRUE, cores=1)
+varExplained=80, scale=TRUE)
 
 testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 package="AffiXcan")
 
 pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
-scale=TRUE, cores=1)
+scale=TRUE)
 
 bs <- training$bs
 

@@ -2,55 +2,34 @@
 AffiXcan is an R package that includes a set of functions to train and to apply
 statistical models to estimate GReX (genetically regulated expression).
 
-For usage, please see the package's
-[vignette](https://mega.nz/#!uW4RRYjJ!loBNzR24ECan2LFLDBmXkekTNtHVbYoBy1iUHmNL1XA).
+## Background
+Understanding and predicting how genetic variation influences gene
+expression in cells and tissues is of great interest in modern biological and
+medical sciences.
 
-### What is GReX?
-GReX is the component of gene expression (here defined as the transcript level,
-e.g RPKM) explained by an individual's genetics.
+The present methods to estimate the genetic contribution to gene expression do
+not take into account functional information in identifying _expression
+quantitative trait loci_ (eQTL), i.e. those genetic variants that contribute to
+explaining the variation of gene expression. Relying on SNPs as predictors
+allows to make significant models of gene expression only for those genes for
+which SNPs with a fairly good effect size exist, but this condition is not
+satisfied for the majority of genes, despite their expression having a non-zero
+heritability (h<sup>2</sup>). To address this issue, new, different strategies
+to analyze genetic variability of regulatory regions and their influence on
+transcription are needed.
 
-The abundance of a transcript in a cell is determined by many factors, including
-genetics, environmental factors, and disease. It can have an impact on the
-cell's physiology and alter the expression of other transcripts or proteins,
-their activity and regulation. Since transcription is initiated by the binding
-of transcription factors to DNA, a portion of gene expression can be directly
-explained by variants in _cis_ regulatory regions.
-
-### Why GReX?
-The estimation of GReX can be useful to perform TWAS when the real total
-expression profile is unknown or can not be measured, for example in those
-tissues - like the brain - that are inaccessible to _in vivo_ safe biopsies, or
-in ancient genomes. 
-
-GReX can be also exploited to estimate the constitutive susceptibility of a
-genome to a certain status, the existence of which is at least partially
-influenced by gene expression.
-
-### Estimate GReX
-Some efforts have been made to develop computational methods to predict GReX
-from genotype data using mathematical models. 
-
-[Gamazon et al.](http://www.nature.com/articles/ng.3367) developed a method
-consisting of multiple-SNP prediction of expression levels, where the estimated
-GReX for a gene is given by an additive model in which SNPs are the independent
-variables.
-
-__AffiXcan__ takes into account the contribution of all polymorphisms of given
-genomic regions that are associated to the expression of a gene. This is done
-using affinity scores -
+## General features
+__AffiXcan__ (total binding AFFInity-eXpression sCANner) implements a functional
+approach based on the
 [TBA](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0143627)
-(Total Binding Affinity) - between those regions and a set of transcription
-factors. A principal component analysis (PCA) is performed on these scores and
-for each expressed gene a linear model is fitted.
+(Total Binding Affinity) score to make statistical models of gene expression,
+being able to make significant predictions on genes for which SNPs with strong
+effect size are absent. Furthermore, such a functional approach allows to make
+mechanistic interpretations in terms of transcription factors binding events
+that drive differential transcriptional expression. These features are of
+considerable importance for eQTL discovery and to improve the capability to
+estimate a [GReX](#grex) (genetically regulated expression) for a greater number
+of genes, at the same time giving insights on the possible molecular mechanisms
+that are involved in differential expression on genes.
 
-### AffiXcan Performance
-We observed that the GReX of the majority of genes for which AffiXcan manages to
-generate a significant model is not predictable by the method cited above.
-Arguably, this is due to the nature of
-[TBA](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0143627)
-score, that allows to take into account the additive small effect of all
-variants in a genomic region. Furthermore, the goodness of prediction achieved
-by AffiXcan on both shared and non-shared genes was significantly greater. For
-brief insights on AffiXcan's results in preliminary tests, see AffiXcan
-Performance section in the package's
-[vignette](https://mega.nz/#!uW4RRYjJ!loBNzR24ECan2LFLDBmXkekTNtHVbYoBy1iUHmNL1XA).
+
