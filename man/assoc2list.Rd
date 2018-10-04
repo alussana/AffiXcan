@@ -22,8 +22,10 @@ expressed gene
 Reorganize associations table in a list
 }
 \examples{
+if (interactive()) {
 data(regionAssoc)
 expressedRegions <- as.list(as.vector(unique(regionAssoc$EXPRESSED_REGION)))
 gene <- expressedRegions[[1]]
 assocList <- assoc2list(gene, regionAssoc)
+}
 }

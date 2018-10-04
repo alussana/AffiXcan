@@ -30,7 +30,7 @@ imputed GReX values
 Compute the imputed GReX for a certain gene on a set of individuals
 }
 \examples{
-\dontrun{
+if (interactive()) {
 trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan")
 

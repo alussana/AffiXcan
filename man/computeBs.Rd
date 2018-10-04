@@ -36,6 +36,7 @@ A list containing three objects:
 Fit a linear model to impute a GReX for a certain gene
 }
 \examples{
+if (interactive()) {
 trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan")
 
@@ -58,4 +59,5 @@ expr <- t(as.data.frame(expr))
 
 bs <- computeBs(assocRegions=assocRegions, pca=pca, expr=expr,
 covariates=trainingCovariates)
+}
 }

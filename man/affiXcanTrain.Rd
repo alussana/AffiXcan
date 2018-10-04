@@ -71,6 +71,7 @@ account during the training phase
 Train the model needed to impute a GReX for each gene
 }
 \examples{
+if(interactive()) {
 trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan")
 
@@ -83,4 +84,5 @@ assay <- "values"
 training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
 varExplained=80, scale=TRUE)
+}
 }

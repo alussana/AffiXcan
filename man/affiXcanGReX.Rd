@@ -22,7 +22,7 @@ A SummarizedExperiment object containing the imputed GReX values
 Compute a GReX from variables and their coefficients for a set of genes
 }
 \examples{
-\dontrun{
+if (interactive()) {
 trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan")
 

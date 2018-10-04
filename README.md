@@ -30,6 +30,6 @@ that drive differential transcriptional expression. These features are of
 considerable importance for eQTL discovery and to improve the capability to
 estimate a [GReX](#grex) (genetically regulated expression) for a greater number
 of genes, at the same time giving insights on the possible molecular mechanisms
-that are involved in differential expression on genes.
+that are involved in differential expression of genes.
 
 

@@ -26,6 +26,7 @@ A SummarizedExperiment object containing imputed GReX values
 Impute a GReX for each gene for which a model was generated
 }
 \examples{
+if (interactive()) {
 trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan")
 
@@ -44,4 +45,5 @@ package="AffiXcan")
 
 exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths,
 affiXcanTraining=training, scale=TRUE)
+}
 }

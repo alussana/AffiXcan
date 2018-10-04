@@ -18,8 +18,10 @@ MultiAssayExperiment RDS object indicated in the param tbaPaths
 Count the number of genomic regions on which the TBA was computed
 }
 \examples{
+if (interactive()) {
 testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 package="AffiXcan")
 
 regionsCount <- overlookRegions(tbaPaths=testingTbaPaths)
+}
 }

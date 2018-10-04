@@ -46,6 +46,7 @@ Each of these lists contains three objects:
 Fit a linear model and compute ANOVA p value
 }
 \examples{
+if (interactive()) {
 trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan")
 
@@ -63,4 +64,5 @@ pca <- training$pca
 
 bs <- affiXcanBs(exprMatrix=exprMatrix, assay=assay, regionAssoc=regionAssoc,
 pca=pca, cov=trainingCovariates)
+}
 }

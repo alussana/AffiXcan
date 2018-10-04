@@ -30,6 +30,7 @@ A list containing two objects:
 Perform a PCA on a matrix where columns are variables
 }
 \examples{
+if (interactive()) {
 tbaMatrixMAE <- readRDS(system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan"))
 
@@ -38,4 +39,5 @@ tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
 tba <- tbaMatrix$ENSG00000256377.1
 
 pca <- computePca(data=tba, varExplained=80, scale=TRUE)
+}
 }

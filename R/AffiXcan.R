@@ -54,6 +54,7 @@
 #' @export
 #'
 #' @examples
+#' if(interactive()) {
 #' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan")
 #'
@@ -66,6 +67,7 @@
 #' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 #' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
 #' varExplained=80, scale=TRUE)
+#' }
 affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov,
     varExplained, scale, BPPARAM=bpparam()) {
     regionsCount <- overlookRegions(tbaPaths)
@@ -94,6 +96,7 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov,
 #' @export
 #'
 #' @examples
+#' if (interactive()) {
 #' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan")
 #'
@@ -112,6 +115,7 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov,
 #' 
 #' exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths,
 #' affiXcanTraining=training, scale=TRUE)
+#' }
 affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale,
                            BPPARAM=bpparam()) {
     regionsCount <- overlookRegions(tbaPaths)
@@ -123,7 +127,7 @@ affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale,
                     tbaPaths refers to ", regionsCount, " regions\n"))
     }
     cat("AffiXcan: Computing principal components ...", "\n")
-    pcs <- affiXcanPcs(tbaPaths, affiXcanTraining, scale, regionsCount, BPPARAM)
+    pcs <- affiXcanPcs(tbaPaths, affiXcanTraining, scale, BPPARAM)
     cat("AffiXcan: Imputing GReX values ...", "\n")
     exprmatrix <- affiXcanGReX(affiXcanTraining, pcs, BPPARAM)
     cat("AffiXcan: Done!", "\n")
@@ -141,10 +145,12 @@ affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale,
 #' @export
 #'
 #' @examples
+#' if (interactive()) {
 #' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
 #' package="AffiXcan")
 #'
 #' regionsCount <- overlookRegions(tbaPaths=testingTbaPaths)
+#' }
 overlookRegions <- function(tbaPaths) {
 
     regionsCount <- 0 
@@ -188,12 +194,14 @@ overlookRegions <- function(tbaPaths) {
 #' @export
 #'
 #' @examples
+#' if (interactive()) {
 #' tbaPaths <- system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan")
 #' regionsCount <- overlookRegions(tbaPaths)
 #'
 #' pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE,
 #' regionsCount=regionsCount)
+#' }
 affiXcanPca <- function(tbaPaths, varExplained, scale, regionsCount,
                         BPPARAM=bpparam()) {
 
@@ -228,9 +236,6 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, regionsCount,
 #' @param affiXcanTraining The returning object from affiXcanTrain()
 #' @param scale A logical; if scale=FALSE the TBA values will be only centered,
 #' not scaled before performing PCA
-#' @param regionsCount An integer, that is the summation of length(assays()) of
-#' every MultiAssayExperiment RDS object indicated in the param tbaPaths; it is
-#' the returning value from overlookRegions()
 #' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
 #' details on BiocParallelParam virtual base class see 
 #' browseVignettes("BiocParallel")
@@ -242,6 +247,7 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, regionsCount,
 #' @export
 #'
 #' @examples
+#' if (interactive()) {
 #' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan")
 #'
@@ -261,18 +267,17 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, regionsCount,
 #' regionsCount <- overlookRegions(testingTbaPaths)
 #' 
 #' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
-#' scale=TRUE, regionsCount=regionsCount)
-affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, regionsCount,
-                        BPPARAM=bpparam()) {
+#' scale=TRUE)
+#' }
+affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, BPPARAM=bpparam()) {
 
-    pcs <- vector("list", regionsCount)
+    pcs <- vector("list", affiXcanTraining$regionsCount)
     index <- 0
 
     for(i in seq(1,length(tbaPaths))) {
 
         pca <- affiXcanTraining$pca
         tbaMatrixMAE <- readRDS(tbaPaths[i])
-        #tbaMatrixMAE <- updateObject(tbaMatrixMAE)
         tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
         regionsList <- setNames(as.list(names(tbaMatrix)), names(tbaMatrix))
         
@@ -325,6 +330,7 @@ affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, regionsCount,
 #' @export
 #'
 #' @examples
+#' if (interactive()) {
 #' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan")
 #'
@@ -342,6 +348,7 @@ affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, regionsCount,
 #'
 #' bs <- affiXcanBs(exprMatrix=exprMatrix, assay=assay, regionAssoc=regionAssoc,
 #' pca=pca, cov=trainingCovariates)
+#' }
 affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov,
                        BPPARAM=bpparam()) {
     expr <- SummarizedExperiment::assays(exprMatrix)[[assay]]
@@ -391,10 +398,12 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov,
 #' @export
 #'
 #' @examples
+#' if (interactive()) {
 #' data(regionAssoc)
 #' expressedRegions <- as.list(as.vector(unique(regionAssoc$EXPRESSED_REGION)))
 #' gene <- expressedRegions[[1]]
 #' assocList <- assoc2list(gene, regionAssoc)
+#' }
 assoc2list <- function(gene, regionAssoc) {
     return(regionAssoc[regionAssoc$EXPRESSED_REGION==gene,])
 }
@@ -412,7 +421,7 @@ assoc2list <- function(gene, regionAssoc) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' if (interactive()) {
 #' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan")
 #'
@@ -479,6 +488,7 @@ affiXcanGReX <- function(affiXcanTraining, pcs, BPPARAM=bpparam()) {
 #' @export
 #'
 #' @examples
+#' if (interactive()) {
 #' tbaMatrixMAE <- readRDS(system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan"))
 #'
@@ -487,6 +497,7 @@ affiXcanGReX <- function(affiXcanTraining, pcs, BPPARAM=bpparam()) {
 #' tba <- tbaMatrix$ENSG00000256377.1
 #'
 #' pca <- computePca(data=tba, varExplained=80, scale=TRUE)
+#' }
 computePca <- function(data, varExplained, scale) {
 
     tryCatch (
@@ -549,6 +560,7 @@ computePca <- function(data, varExplained, scale) {
 #' @export
 #'
 #' @examples
+#' if (interactive()) {
 #' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan")
 #'
@@ -569,6 +581,7 @@ computePca <- function(data, varExplained, scale) {
 #'
 #' pca <- training$pca
 #' pcs <- computePcs(region=region, tbaMatrix=tbaMatrixMAE, scale=TRUE, pca=pca)
+#' }
 computePcs <- function(region, tbaMatrix, scale, pca) {
 
     myRegion <- region[[1]]
@@ -614,6 +627,7 @@ computePcs <- function(region, tbaMatrix, scale, pca) {
 #' @export
 #'
 #' @examples
+#' if (interactive()) {
 #' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan")
 #'
@@ -636,6 +650,7 @@ computePcs <- function(region, tbaMatrix, scale, pca) {
 #'
 #' bs <- computeBs(assocRegions=assocRegions, pca=pca, expr=expr,
 #' covariates=trainingCovariates)
+#' }
 computeBs <- function(assocRegions, pca, expr, covariates) {
     expressedRegion <- as.vector(unique(assocRegions$EXPRESSED_REGION))
     expression <- as.vector(as.data.frame(expr)[[expressedRegion]])
@@ -713,7 +728,7 @@ computeBs <- function(assocRegions, pca, expr, covariates) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' if (interactive()) {
 #' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan")
 #'

@@ -27,6 +27,7 @@ TBA values and the eigenvectors
 Compute a matrix product between variables and eigenvectors
 }
 \examples{
+if (interactive()) {
 trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan")
 
@@ -47,4 +48,5 @@ package="AffiXcan"))
 
 pca <- training$pca
 pcs <- computePcs(region=region, tbaMatrix=tbaMatrixMAE, scale=TRUE, pca=pca)
+}
 }

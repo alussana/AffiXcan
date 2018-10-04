@@ -41,10 +41,12 @@ listed in the param tbaPaths. Each of these lists contains two objects:
 Perform a PCA on each experiment found in MultiAssayExperiment objects
 }
 \examples{
+if (interactive()) {
 tbaPaths <- system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan")
 regionsCount <- overlookRegions(tbaPaths)
 
 pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE,
 regionsCount=regionsCount)
+}
 }
