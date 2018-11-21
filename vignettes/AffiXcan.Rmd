@@ -132,7 +132,7 @@ MultiAssayExperiment.html) objects. A toy example of one of these objects is
 shown below:
 
 ```{r}
-library(MultiAssayExperiment)
+suppressMessages(library(MultiAssayExperiment))
 tba <- readRDS(system.file("extdata","training.tba.toydata.rds",
     package="AffiXcan")) ## This is a MultiAssayExperiment object
 tba <- updateObject(tba)
