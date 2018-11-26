@@ -1,6 +1,6 @@
 Package: AffiXcan
 Title: A Functional Approach To Impute Genetically Regulated Expression
-Version: 1.1.1
+Version: 1.1.2
 biocViews: GeneExpression, Transcription, GeneRegulation, DimensionReduction, Regression 
 Authors@R: person("Alessandro", "Lussana", email = "alessandro.lussana@protonmail.com", role = c("aut", "cre"))
 Description: Impute a GReX (Genetically Regulated Expression) for a set of genes in a sample of individuals, using a method based on the Total Binding Affinity (TBA). Statistical models to impute GReX can be trained with a training dataset where the real total expression values are known.
