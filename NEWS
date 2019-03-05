@@ -1,0 +1,6 @@
+CHANGES IN VERSION 1.1.3
+------------------------
+
+BUG FIXES
+
+    o Fix a bug in generating the vignette for 'devel' version of Bioconductor

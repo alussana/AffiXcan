@@ -1,6 +1,9 @@
 # AffiXcan
 AffiXcan is an R package that includes a set of functions to train and to apply
-statistical models to estimate GReX (genetically regulated expression).
+statistical models to estimate the **GReX** (genetically regulated expression). 
+
+To use AffiXcan please refer to the 
+[Bioconductor](https://bioconductor.org/packages/AffiXcan) webpage.
 
 ## Background
 Understanding and predicting how genetic variation influences gene
@@ -28,7 +31,7 @@ effect size are absent. Furthermore, such a functional approach allows to make
 mechanistic interpretations in terms of transcription factors binding events
 that drive differential transcriptional expression. These features are of
 considerable importance for eQTL discovery and to improve the capability to
-estimate a [GReX](#grex) (genetically regulated expression) for a greater number
+estimate a **GReX** (genetically regulated expression) for a greater number
 of genes, at the same time giving insights on the possible molecular mechanisms
 that are involved in differential expression of genes.
 

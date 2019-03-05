@@ -9,7 +9,7 @@ author:
 abstract: >
   This package includes a set of functions to train and to apply statistical
   models to estimate GReX (genetically regulated expression).
-package: AffiXcan 0.99.14
+package: AffiXcan 1.1.3
 output:
   BiocStyle::html_document:
     df_print: paged
@@ -135,7 +135,6 @@ shown below:
 suppressMessages(library(MultiAssayExperiment))
 tba <- readRDS(system.file("extdata","training.tba.toydata.rds",
     package="AffiXcan")) ## This is a MultiAssayExperiment object
-tba <- updateObject(tba)
 names(assays(tba))
 ```
 
