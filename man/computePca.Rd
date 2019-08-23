@@ -4,7 +4,7 @@
 \alias{computePca}
 \title{Perform a PCA on a matrix where columns are variables}
 \usage{
-computePca(data, varExplained, scale)
+computePca(data, varExplained = 80, scale = TRUE)
 }
 \arguments{
 \item{data}{A matrix containing the TBA values for a certain genomic region;
@@ -12,10 +12,10 @@ columns are PWMs, rows are individuals IIDs}
 
 \item{varExplained}{An integer between 0 and 100; varExplained=80 means that
 the principal components selected to fit the models must explain at least
-80 percent of variation of TBA values}
+80 percent of variation of TBA values; default is 80}
 
 \item{scale}{A logical; if scale=FALSE the TBA values will be only centered,
-not scaled before performing PCA}
+not scaled before performing PCA; default is TRUE}
 }
 \value{
 A list containing two objects:
@@ -31,13 +31,24 @@ Perform a PCA on a matrix where columns are variables
 }
 \examples{
 if (interactive()) {
+data(exprMatrix)
+sampleNames <- colnames(exprMatrix)
+nSamples <- length(sampleNames)
+sampGroups <- subsetKFold(k=3, n=nSamples)
+for (i in seq(length(sampGroups))) {
+     sampGroups[[i]] <- colnames(exprMatrix)[sampGroups[[i]]]
+}
+testingSamples <- sampGroups[[i]]
+trainingSamples <- sampleNames[!sampleNames \%in\% testingSamples]
+
 tbaMatrixMAE <- readRDS(system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan"))
-
+tbaMatrixMAE <- MultiAssayExperiment::subsetByRow(tbaMatrixMAE,
+                                                  trainingSamples)
 tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
-
 tba <- tbaMatrix$ENSG00000256377.1
 
 pca <- computePca(data=tba, varExplained=80, scale=TRUE)
+
 }
 }

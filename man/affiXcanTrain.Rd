@@ -4,8 +4,8 @@
 \alias{affiXcanTrain}
 \title{Train the model needed to impute a GReX for each gene}
 \usage{
-affiXcanTrain(exprMatrix, assay, tbaPaths, regionAssoc, cov, varExplained,
-  scale, BPPARAM = bpparam())
+affiXcanTrain(exprMatrix, assay, tbaPaths, regionAssoc, cov,
+  varExplained = 80, scale = TRUE, BPPARAM = bpparam(), kfold = 1)
 }
 \arguments{
 \item{exprMatrix}{A SummarizedExperiment object containing expression data}
@@ -25,47 +25,75 @@ where the columns are the PCs and the rows are the individual IIDs}
 
 \item{varExplained}{An integer between 0 and 100; varExplained=80 means that
 the principal components selected to fit the models must explain at least
-80 percent of variation of TBA values}
+80 percent of variation of TBA values; default is 80}
 
 \item{scale}{A logical; if scale=FALSE the TBA values will be only centered,
-not scaled before performing PCA}
+not scaled before performing PCA; default is TRUE}
 
 \item{BPPARAM}{A BiocParallelParam object. Default is bpparam(). For
 details on BiocParallelParam virtual base class see 
 browseVignettes("BiocParallel")}
+
+\item{kfold}{An integer. The k definition of k-fold cross-validation on the
+training dataset. Default is 1. This argument controls the behavior of the
+function in the following way:
+     
+     kfold<2  : train the models on the whole dataset, not performing the
+                cross-validation
+     kfold>=2 : perform the k-fold cross-validation}
 }
 \value{
-A list containing three objects: pca, bs, regionsCount
+The output depends on the parameter kfold
 
-pca: A list containing lists named as the MultiAssayExperiment::experiments()
-found in the MultiAssayExperiment objects listed in the param tbaPaths. Each
-of these lists contains two objects:
+If kfold<2: a list containing three objects: pca, bs, regionsCount
 
-   eigenvectors: A matrix containing eigenvectors for those principal
-   components selected according to the param varExplained
+     pca: A list containing lists named as the MultiAssayExperiment::experiments()
+     found in the MultiAssayExperiment objects listed in the param tbaPaths. Each
+     of these lists contain two objects:
 
-   pcs: A matrix containing the principal components values selected
-   according to the param varExplained
+         eigenvectors: A matrix containing eigenvectors for those principal
+         components selected according to the param varExplained
 
-bs: A list containing lists named as the REGULATORY_REGIONS found in the
-param regionAssoc that have a correspondent colname in the experiments
-stored in MultiAssayExperiment objects listed in the param tbaPaths.
-Each of the lists in bs contains four objects:
+         pcs: A matrix containing the principal components values selected
+         according to the param varExplained
 
-   coefficients: The coefficients of the principal components used in the
-   model, completely similar to the "coefficients" from the results of lm()
+     bs: A list containing lists named as the REGULATORY_REGIONS found in the
+     param regionAssoc that have a correspondent colname in the experiments
+     stored in MultiAssayExperiment objects listed in the param tbaPaths.
+     Each of the lists in bs contains four objects:
 
-   pval: The uncorrected anova pvalue of the model, retrieved from
-   anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+         coefficients: The coefficients of the principal components used in the
+         model, completely similar to the "coefficients" from the results of lm()
 
-   r.sq: The coefficient of determination between the real total expression
-   values and the imputed GReX, retrived from summary(model)$r.squared
+         pval: The uncorrected anova pvalue of the model, retrieved from
+         anova(model, modelReduced, test="F")$'Pr(>F)'[2]
 
-   correctedP: The p value after the benjamini-hochberg correction for
-   multiple testing, retrived using p.adjust(pvalues, method="BH")
+         r.sq: The coefficient of determination between the real total expression
+         values and the imputed GReX, retrived from summary(model)$r.squared
 
-regionsCount: An integer, that is the number of genomic regions taken into
-account during the training phase
+         correctedP: The p value after the benjamini-hochberg correction for
+         multiple testing, retrived using p.adjust(pvalues, method="BH")
+
+         mean.r.sq: The mean of the R-squared (R^2) values obtained from the
+         k-fold cross-validation
+
+     regionsCount: An integer, that is the number of genomic regions taken into
+     account during the training phase
+
+If kfold>=2: a list containing k-fold objects, named from 1 to kfold and
+corresponding to the different cross-validations [i]; each one of these
+objects is a list containing lists named as the expressed gene IDs [y] (i.e.
+the rownames() of the object in SummarizedExperiment::assays(exprMatrix)
+containing the expression values), for which a GReX could be imputed. Each of
+these inner lists contain two objects:
+     
+     pearson: the pearson's correlation coefficient (R) between the real
+     expression values and the imputed GReX for the cross-validation i on
+     the expressed gene y, computed with cor()
+
+     rSquared: the coefficient of determination (R^2) between the real
+     expression values and the imputed GReX for the cross-validation i on
+     the expressed gene y, computed as pearson^2
 }
 \description{
 Train the model needed to impute a GReX for each gene
@@ -83,6 +111,6 @@ assay <- "values"
 
 training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-varExplained=80, scale=TRUE)
+varExplained=80, scale=TRUE, kfold=3)
 }
 }

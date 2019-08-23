@@ -4,8 +4,8 @@
 \alias{affiXcanPca}
 \title{Perform a PCA on each experiment found in MultiAssayExperiment objects}
 \usage{
-affiXcanPca(tbaPaths, varExplained, scale, regionsCount,
-  BPPARAM = bpparam())
+affiXcanPca(tbaPaths, varExplained = 80, scale = TRUE, regionsCount,
+  BPPARAM = bpparam(), trainingSamples)
 }
 \arguments{
 \item{tbaPaths}{A vector of strings, which are the paths to
@@ -13,10 +13,10 @@ MultiAssayExperiment RDS files containing the tba values}
 
 \item{varExplained}{An integer between 0 and 100; varExplained=80 means that
 the principal components selected to fit the models must explain at least
-80 percent of variation of TBA values}
+80 percent of variation of TBA values; default is 80}
 
 \item{scale}{A logical; if scale=FALSE the TBA values will be only centered,
-not scaled before performing PCA}
+not scaled before performing PCA; default is TRUE}
 
 \item{regionsCount}{An integer, that is the summation of length(assays()) of
 every MultiAssayExperiment RDS object indicated in the param tbaPaths; it is
@@ -25,11 +25,15 @@ the returning value from overlookRegions()}
 \item{BPPARAM}{A BiocParallelParam object. Default is bpparam(). For
 details on BiocParallelParam virtual base class see 
 browseVignettes("BiocParallel")}
+
+\item{trainingSamples}{A vector of strings. The identifiers (e.g. row names
+of MultiAssayExperiment objects from tbaPaths) of the samples that have to
+be considered in the training phase, and not used for the cross-validation}
 }
 \value{
 pca: A list containing lists named as the 
 MultiAssayExperiment::experiments() found in the MultiAssayExperiment objects
-listed in the param tbaPaths. Each of these lists contains two objects:
+listed in the param tbaPaths. Each of these lists contain two objects:
 
    eigenvectors: A matrix containing eigenvectors for those principal
    components selected according to the param varExplained
@@ -42,11 +46,23 @@ Perform a PCA on each experiment found in MultiAssayExperiment objects
 }
 \examples{
 if (interactive()) {
+data(exprMatrix)
+
 tbaPaths <- system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan")
 regionsCount <- overlookRegions(tbaPaths)
 
+sampleNames <- colnames(exprMatrix)
+nSamples <- length(sampleNames)
+sampGroups <- subsetKFold(k=3, n=nSamples)
+for (i in seq(length(sampGroups))) {
+     sampGroups[[i]] <- colnames(exprMatrix)[sampGroups[[i]]]
+}
+
+testingSamples <- sampGroups[[1]]
+trainingSamples <- sampleNames[!sampleNames \%in\% testingSamples]
+
 pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE,
-regionsCount=regionsCount)
+regionsCount=regionsCount, trainingSamples=trainingSamples)
 }
 }

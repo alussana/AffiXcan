@@ -42,8 +42,6 @@ package="AffiXcan")
 pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
 scale=TRUE)
 
-bs <- training$bs
-
 exprmatrix <- affiXcanGReX(affiXcanTraining=training, pcs=pcs)
 }
 }

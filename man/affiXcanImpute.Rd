@@ -4,7 +4,8 @@
 \alias{affiXcanImpute}
 \title{Impute a GReX for each gene for which a model was generated}
 \usage{
-affiXcanImpute(tbaPaths, affiXcanTraining, scale, BPPARAM = bpparam())
+affiXcanImpute(tbaPaths, affiXcanTraining, scale = TRUE,
+  BPPARAM = bpparam())
 }
 \arguments{
 \item{tbaPaths}{A vector of strings, which are the paths to
@@ -13,7 +14,7 @@ MultiAssayExperiment RDS files containing the tba values}
 \item{affiXcanTraining}{The returning object from affiXcanTrain()}
 
 \item{scale}{A logical; if scale=FALSE the TBA values will be only centered,
-not scaled before performing PCA}
+not scaled before performing PCA; default is TRUE}
 
 \item{BPPARAM}{A BiocParallelParam object. Default is bpparam(). For
 details on BiocParallelParam virtual base class see 

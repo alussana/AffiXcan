@@ -37,27 +37,42 @@ Fit a linear model to impute a GReX for a certain gene
 }
 \examples{
 if (interactive()) {
-trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
-package="AffiXcan")
-
 data(exprMatrix)
-data(regionAssoc)
 data(trainingCovariates)
+data(regionAssoc)
 
+tbaPaths <- system.file("extdata","training.tba.toydata.rds",
+package="AffiXcan")
+regionsCount <- overlookRegions(tbaPaths)
 assay <- "values"
 
-assocRegions <- regionAssoc[regionAssoc$EXPRESSED_REGION==
-"ENSG00000256377.1",]
+sampleNames <- colnames(exprMatrix)
+nSamples <- length(sampleNames)
+sampGroups <- subsetKFold(k=5, n=nSamples)
+for (i in seq(length(sampGroups))) {
+     sampGroups[[i]] <- colnames(exprMatrix)[sampGroups[[i]]]
+}
 
-regionsCount <- overlookRegions(trainingTbaPaths)
+testingSamples <- sampGroups[[1]]
+trainingSamples <- sampleNames[!sampleNames \%in\% testingSamples]
 
-pca <- affiXcanPca(tbaPaths=trainingTbaPaths, varExplained=80, scale=TRUE,
-regionsCount=regionsCount)
+pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE,
+regionsCount=regionsCount, trainingSamples=trainingSamples)
+
+cov <- trainingCovariates
+cov <- cov[rownames(cov) \%in\% trainingSamples,]
 
 expr <- SummarizedExperiment::assays(exprMatrix)[[assay]]
+expr <- expr[,colnames(expr) \%in\% trainingSamples]
 expr <- t(as.data.frame(expr))
 
+expressedRegions <- as.vector(unique(regionAssoc$EXPRESSED_REGION))
+assocList <- BiocParallel::bplapply(X=expressedRegions, FUN=assoc2list,
+regionAssoc)
+names(assocList) <- expressedRegions
+assocRegions <- assocList[[1]]
+
 bs <- computeBs(assocRegions=assocRegions, pca=pca, expr=expr,
-covariates=trainingCovariates)
+covariates=cov)
 }
 }

@@ -4,7 +4,8 @@
 \alias{affiXcanPcs}
 \title{Compute PCs in MultiAssayExperiment objects using eigenvectors given by user}
 \usage{
-affiXcanPcs(tbaPaths, affiXcanTraining, scale, BPPARAM = bpparam())
+affiXcanPcs(tbaPaths, affiXcanTraining, scale, BPPARAM = bpparam(),
+  testingSamples = NULL)
 }
 \arguments{
 \item{tbaPaths}{A vector of strings, which are the paths to
@@ -18,6 +19,12 @@ not scaled before performing PCA}
 \item{BPPARAM}{A BiocParallelParam object. Default is bpparam(). For
 details on BiocParallelParam virtual base class see 
 browseVignettes("BiocParallel")}
+
+\item{testingSamples}{A vector of strings. The identifiers (e.g. row names
+of MultiAssayExperiment objects from tbaPaths) of the samples that have not
+been considered in the training phase, to be used in the cross-validation;
+default is NULL; if is.null(testingSamples)==TRUE then no filtering is
+performed}
 }
 \value{
 A list of matrices containing the principal components values of TBA
@@ -29,23 +36,20 @@ Compute PCs in MultiAssayExperiment objects using eigenvectors given by user
 }
 \examples{
 if (interactive()) {
+data(exprMatrix)
+data(trainingCovariates)
+data(regionAssoc)
+
 trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
 package="AffiXcan")
-
-data(exprMatrix)
-data(regionAssoc)
-data(trainingCovariates)
+testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
+package="AffiXcan")
 
 assay <- "values"
 
 training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
 varExplained=80, scale=TRUE)
-
-testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
-package="AffiXcan")
-
-regionsCount <- overlookRegions(testingTbaPaths)
 
 pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
 scale=TRUE)

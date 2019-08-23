@@ -12,44 +12,71 @@
 #' where the columns are the PCs and the rows are the individual IIDs
 #' @param varExplained An integer between 0 and 100; varExplained=80 means that
 #' the principal components selected to fit the models must explain at least
-#' 80 percent of variation of TBA values
+#' 80 percent of variation of TBA values; default is 80
 #' @param scale A logical; if scale=FALSE the TBA values will be only centered,
-#' not scaled before performing PCA
+#' not scaled before performing PCA; default is TRUE
 #' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
 #' details on BiocParallelParam virtual base class see 
 #' browseVignettes("BiocParallel")
+#' @param kfold An integer. The k definition of k-fold cross-validation on the
+#' training dataset. Default is 1. This argument controls the behavior of the
+#' function in the following way:
+#'      
+#'      kfold<2  : train the models on the whole dataset, not performing the
+#'                 cross-validation
+#'      kfold>=2 : perform the k-fold cross-validation
 #'
-#' @return A list containing three objects: pca, bs, regionsCount
+#' @return The output depends on the parameter kfold
+#' 
+#' If kfold<2: a list containing three objects: pca, bs, regionsCount
 #'
-#' pca: A list containing lists named as the MultiAssayExperiment::experiments()
-#' found in the MultiAssayExperiment objects listed in the param tbaPaths. Each
-#' of these lists contains two objects:
+#'      pca: A list containing lists named as the MultiAssayExperiment::experiments()
+#'      found in the MultiAssayExperiment objects listed in the param tbaPaths. Each
+#'      of these lists contain two objects:
 #'
-#'    eigenvectors: A matrix containing eigenvectors for those principal
-#'    components selected according to the param varExplained
+#'          eigenvectors: A matrix containing eigenvectors for those principal
+#'          components selected according to the param varExplained
 #'
-#'    pcs: A matrix containing the principal components values selected
-#'    according to the param varExplained
+#'          pcs: A matrix containing the principal components values selected
+#'          according to the param varExplained
 #'
-#' bs: A list containing lists named as the REGULATORY_REGIONS found in the
-#' param regionAssoc that have a correspondent colname in the experiments
-#' stored in MultiAssayExperiment objects listed in the param tbaPaths.
-#' Each of the lists in bs contains four objects:
+#'      bs: A list containing lists named as the REGULATORY_REGIONS found in the
+#'      param regionAssoc that have a correspondent colname in the experiments
+#'      stored in MultiAssayExperiment objects listed in the param tbaPaths.
+#'      Each of the lists in bs contains four objects:
 #'
-#'    coefficients: The coefficients of the principal components used in the
-#'    model, completely similar to the "coefficients" from the results of lm()
+#'          coefficients: The coefficients of the principal components used in the
+#'          model, completely similar to the "coefficients" from the results of lm()
 #'
-#'    pval: The uncorrected anova pvalue of the model, retrieved from
-#'    anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+#'          pval: The uncorrected anova pvalue of the model, retrieved from
+#'          anova(model, modelReduced, test="F")$'Pr(>F)'[2]
 #'
-#'    r.sq: The coefficient of determination between the real total expression
-#'    values and the imputed GReX, retrived from summary(model)$r.squared
+#'          r.sq: The coefficient of determination between the real total expression
+#'          values and the imputed GReX, retrived from summary(model)$r.squared
 #'
-#'    correctedP: The p value after the benjamini-hochberg correction for
-#'    multiple testing, retrived using p.adjust(pvalues, method="BH")
+#'          correctedP: The p value after the benjamini-hochberg correction for
+#'          multiple testing, retrived using p.adjust(pvalues, method="BH")
 #'
-#' regionsCount: An integer, that is the number of genomic regions taken into
-#' account during the training phase
+#'          mean.r.sq: The mean of the R-squared (R^2) values obtained from the
+#'          k-fold cross-validation
+#'
+#'      regionsCount: An integer, that is the number of genomic regions taken into
+#'      account during the training phase
+#'
+#' If kfold>=2: a list containing k-fold objects, named from 1 to kfold and
+#' corresponding to the different cross-validations [i]; each one of these
+#' objects is a list containing lists named as the expressed gene IDs [y] (i.e.
+#' the rownames() of the object in SummarizedExperiment::assays(exprMatrix)
+#' containing the expression values), for which a GReX could be imputed. Each of
+#' these inner lists contain two objects:
+#'      
+#'      pearson: the pearson's correlation coefficient (R) between the real
+#'      expression values and the imputed GReX for the cross-validation i on
+#'      the expressed gene y, computed with cor()
+#'
+#'      rSquared: the coefficient of determination (R^2) between the real
+#'      expression values and the imputed GReX for the cross-validation i on
+#'      the expressed gene y, computed as pearson^2
 #' @import MultiAssayExperiment SummarizedExperiment BiocParallel
 #' @export
 #'
@@ -66,103 +93,76 @@
 #'
 #' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
 #' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-#' varExplained=80, scale=TRUE)
+#' varExplained=80, scale=TRUE, kfold=3)
 #' }
 affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov,
-    varExplained, scale, BPPARAM=bpparam()) {
+    varExplained=80, scale=TRUE, BPPARAM=bpparam(), kfold=1) {
     regionsCount <- overlookRegions(tbaPaths)
-    cat("AffiXcan: Performing PCA ...", "\n")
-    pca <- affiXcanPca(tbaPaths, varExplained, scale, regionsCount, BPPARAM)
-    cat("AffiXcan: Training coefficients ...", "\n")
-    bs <- affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov, BPPARAM)
-    affiXcanTraining <- list(pca=pca, bs=bs, regionsCount=regionsCount)
-    cat("AffiXcan: Done!", "\n")
-    return(affiXcanTraining)
+    sampleNames <- colnames(exprMatrix)
+    nSamples <- length(sampleNames)
+    sampGroups <- subsetKFold(kfold, nSamples)
+    for (i in seq(length(sampGroups))) {
+        sampGroups[[i]] <- colnames(exprMatrix)[sampGroups[[i]]]
+    }
+    trainingOutput <- vector('list', length=kfold)
+    
+    for (i in seq(kfold)) {
+        if (kfold > 1) {
+            cat("\nAffiXcan: Performing Training With ", kfold,
+                "-Fold Cross-Validation (",i,"/",kfold,")\n", sep="")
+            testingSamples <- sampGroups[[i]]
+            trainingSamples <- sampleNames[!sampleNames %in% testingSamples]
+        }
+        else {
+            cat("\nAffiXcan: Training The Models\n")
+            trainingSamples <- sampleNames
+        }
+
+        cat("\n\t--> Performing Principal Component Analysis\n")
+        pca <- affiXcanPca(tbaPaths, varExplained, scale, regionsCount,
+                           BPPARAM, trainingSamples)
+        cat("\t--> Training Coefficients\n")
+        bs <- affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov, BPPARAM,
+                         trainingSamples)
+        affiXcanTraining <- list(pca=pca, bs=bs, regionsCount=regionsCount)
+
+        if (kfold > 1) {
+            cat("\t--> Computing Principal Components On Testing Set\n")
+            pcs <- affiXcanPcs(tbaPaths, affiXcanTraining, scale, BPPARAM,
+                               testingSamples)
+            cat("\t--> Imputing GReX Values\n")
+            imputedExpr <- affiXcanGReX(affiXcanTraining, pcs, BPPARAM)
+            cat("\t--> Computing Cross-Validated R^2\n")
+            correlation <- computeRSquared(exprMatrix, imputedExpr, assay,
+                                         testingSamples, BPPARAM)
+            trainingOutput[[i]] <- correlation
+        }
+        else {
+            trainingOutput <- affiXcanTraining
+        }
+        cat("\tDone!\n")
+    }
+    
+    return(trainingOutput)
 }
 
-#' Impute a GReX for each gene for which a model was generated
+#' Split the numbers from 1 to n in k equally-sized lists
 #'
-#' @param tbaPaths A vector of strings, which are the paths to
-#' MultiAssayExperiment RDS files containing the tba values
-#' @param affiXcanTraining The returning object from affiXcanTrain()
-#' @param scale A logical; if scale=FALSE the TBA values will be only centered,
-#' not scaled before performing PCA
-#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
-#' details on BiocParallelParam virtual base class see 
-#' browseVignettes("BiocParallel")
+#' @param k An integer. The number of groups in which the first n natural
+#' numbers are to be splitted
+#' @param n An integer. Defines the interval 1..n 
 #'
-#' @return A SummarizedExperiment object containing imputed GReX values
-#' @import MultiAssayExperiment SummarizedExperiment BiocParallel
+#' @return sampGroups: a list of lists; the first natural n numbers equally
+#' distributed across k lists
+#'
 #' @export
 #'
 #' @examples
-#' if (interactive()) {
-#' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
-#' package="AffiXcan")
-#'
-#' data(exprMatrix)
-#' data(regionAssoc)
-#' data(trainingCovariates)
-#'
-#' assay <- "values"
-#'
-#' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
-#' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-#' varExplained=80, scale=TRUE)
-#'
-#' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
-#' package="AffiXcan")
-#' 
-#' exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths,
-#' affiXcanTraining=training, scale=TRUE)
-#' }
-affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale,
-                           BPPARAM=bpparam()) {
-    regionsCount <- overlookRegions(tbaPaths)
-    if(regionsCount!=affiXcanTraining$regionsCount) {
-        warning(cat("The amount of genomic regions included in the training
-                    phase is different from those found in the TBA matrices:\n
-                    TBA in the training set was computed on ",
-                    affiXcanTraining$regionsCount, " regions\n TBA provided in
-                    tbaPaths refers to ", regionsCount, " regions\n"))
-    }
-    cat("AffiXcan: Computing principal components ...", "\n")
-    pcs <- affiXcanPcs(tbaPaths, affiXcanTraining, scale, BPPARAM)
-    cat("AffiXcan: Imputing GReX values ...", "\n")
-    exprmatrix <- affiXcanGReX(affiXcanTraining, pcs, BPPARAM)
-    cat("AffiXcan: Done!", "\n")
-    return(exprmatrix)
-}
-
-#' Count the number of genomic regions on which the TBA was computed
-#'
-#' @param tbaPaths, A vector of strings, which are the paths to
-#' MultiAssayExperiment RDS files containing the tba values
-#'
-#' @return An integer, that is the summation of length(assays()) of every
-#' MultiAssayExperiment RDS object indicated in the param tbaPaths
-#' @import MultiAssayExperiment
-#' @export
-#'
-#' @examples
-#' if (interactive()) {
-#' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
-#' package="AffiXcan")
-#'
-#' regionsCount <- overlookRegions(tbaPaths=testingTbaPaths)
-#' }
-overlookRegions <- function(tbaPaths) {
-
-    regionsCount <- 0 
-    
-    for(path in tbaPaths) {
-        tba <- readRDS(path)
-        assaysNum <- length(assays(tba))
-        regionsCount <- regionsCount + assaysNum
-    }
-
-    return(regionsCount)
-    
+#' sampGroups <- subsetKFold(k=5, n=23)
+subsetKFold <- function(k, n) {
+    sampGroups <- as.vector(seq(n))
+    sampGroups <- split(sampGroups, seq_along(sampGroups)%%k + 1)
+    return(sampGroups)
 }
 
 #' Perform a PCA on each experiment found in MultiAssayExperiment objects
@@ -171,19 +171,22 @@ overlookRegions <- function(tbaPaths) {
 #' MultiAssayExperiment RDS files containing the tba values
 #' @param varExplained An integer between 0 and 100; varExplained=80 means that
 #' the principal components selected to fit the models must explain at least
-#' 80 percent of variation of TBA values
+#' 80 percent of variation of TBA values; default is 80
 #' @param scale A logical; if scale=FALSE the TBA values will be only centered,
-#' not scaled before performing PCA
+#' not scaled before performing PCA; default is TRUE
 #' @param regionsCount An integer, that is the summation of length(assays()) of
 #' every MultiAssayExperiment RDS object indicated in the param tbaPaths; it is
 #' the returning value from overlookRegions()
 #' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
 #' details on BiocParallelParam virtual base class see 
 #' browseVignettes("BiocParallel")
+#' @param trainingSamples A vector of strings. The identifiers (e.g. row names
+#' of MultiAssayExperiment objects from tbaPaths) of the samples that have to
+#' be considered in the training phase, and not used for the cross-validation 
 #'
 #' @return pca: A list containing lists named as the 
 #' MultiAssayExperiment::experiments() found in the MultiAssayExperiment objects
-#' listed in the param tbaPaths. Each of these lists contains two objects:
+#' listed in the param tbaPaths. Each of these lists contain two objects:
 #'
 #'    eigenvectors: A matrix containing eigenvectors for those principal
 #'    components selected according to the param varExplained
@@ -195,15 +198,27 @@ overlookRegions <- function(tbaPaths) {
 #'
 #' @examples
 #' if (interactive()) {
+#' data(exprMatrix)
+#'
 #' tbaPaths <- system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan")
 #' regionsCount <- overlookRegions(tbaPaths)
 #'
-#' pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE,
-#' regionsCount=regionsCount)
+#' sampleNames <- colnames(exprMatrix)
+#' nSamples <- length(sampleNames)
+#' sampGroups <- subsetKFold(k=3, n=nSamples)
+#' for (i in seq(length(sampGroups))) {
+#'      sampGroups[[i]] <- colnames(exprMatrix)[sampGroups[[i]]]
 #' }
-affiXcanPca <- function(tbaPaths, varExplained, scale, regionsCount,
-                        BPPARAM=bpparam()) {
+#' 
+#' testingSamples <- sampGroups[[1]]
+#' trainingSamples <- sampleNames[!sampleNames %in% testingSamples]
+#'
+#' pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE,
+#' regionsCount=regionsCount, trainingSamples=trainingSamples)
+#' }
+affiXcanPca <- function(tbaPaths, varExplained=80, scale=TRUE, regionsCount,
+                        BPPARAM=bpparam(), trainingSamples) {
 
     pca <- vector("list", regionsCount)
     index <- 0
@@ -211,6 +226,8 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, regionsCount,
     for(i in seq(1,length(tbaPaths))) {
 
         tbaMatrixMAE <- readRDS(tbaPaths[i])
+        tbaMatrixMAE <- MultiAssayExperiment::subsetByRow(tbaMatrixMAE,
+                                                          trainingSamples)
         tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
 
         newPca <- BiocParallel::bplapply(X=tbaMatrix, FUN=computePca,
@@ -229,254 +246,15 @@ affiXcanPca <- function(tbaPaths, varExplained, scale, regionsCount,
 
 }
 
-#' Compute PCs in MultiAssayExperiment objects using eigenvectors given by user
-#'
-#' @param tbaPaths A vector of strings, which are the paths to
-#' MultiAssayExperiment RDS files containing the tba values
-#' @param affiXcanTraining The returning object from affiXcanTrain()
-#' @param scale A logical; if scale=FALSE the TBA values will be only centered,
-#' not scaled before performing PCA
-#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
-#' details on BiocParallelParam virtual base class see 
-#' browseVignettes("BiocParallel")
-#'
-#' @return A list of matrices containing the principal components values of TBA
-#' for each region; each object of the list is named after the
-#' MultiAssayExperiment object from which it derives
-#' @import MultiAssayExperiment BiocParallel
-#' @export
-#'
-#' @examples
-#' if (interactive()) {
-#' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
-#' package="AffiXcan")
-#'
-#' data(exprMatrix)
-#' data(regionAssoc)
-#' data(trainingCovariates)
-#'
-#' assay <- "values"
-#'
-#' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
-#' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-#' varExplained=80, scale=TRUE)
-#'
-#' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
-#' package="AffiXcan")
-#'
-#' regionsCount <- overlookRegions(testingTbaPaths)
-#' 
-#' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
-#' scale=TRUE)
-#' }
-affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, BPPARAM=bpparam()) {
-
-    pcs <- vector("list", affiXcanTraining$regionsCount)
-    index <- 0
-
-    for(i in seq(1,length(tbaPaths))) {
-
-        pca <- affiXcanTraining$pca
-        tbaMatrixMAE <- readRDS(tbaPaths[i])
-        tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
-        regionsList <- setNames(as.list(names(tbaMatrix)), names(tbaMatrix))
-        
-        newPcs <- BiocParallel::bplapply(X=regionsList, FUN=computePcs,
-            tbaMatrix, scale, pca, BPPARAM=BPPARAM)
-        
-        for(l in seq(1,length(newPcs))) {
-            pcs[index + l] <- newPcs[l]
-            names(pcs)[index + l] <- names(newPcs)[l]
-        }
-
-        index <- index + length(newPcs)
-    
-    }
-
-    return(pcs)
-}
-
-#' Fit a linear model and compute ANOVA p value
-#'
-#' @param exprMatrix A SummarizedExperiment object containing expression data
-#' @param assay A string with the name of the object in
-#' SummarizedExperiment::assays(exprMatrix) that contains expression values
-#' @param regionAssoc A data.frame with the associations between regulatory
-#' regions and expressed genes, and with colnames = c("REGULATORY_REGION",
-#' "EXPRESSED_REGION")
-#' @param pca A list, which is the returningObject$pca from affiXcanPca()
-#' @param cov A data.frame with covariates values for the population structure
-#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
-#' details on BiocParallelParam virtual base class see 
-#' browseVignettes("BiocParallel")
-#'
-#' @return A list containing lists named as the REGULATORY_REGIONS found in the
-#' param regionAssoc that have a correspondent name in the param pca.
-#' Each of these lists contains three objects:
-#'
-#'    coefficients: An object containing the coefficients of the principal
-#'    components used in the model, completely similar to the "coefficients"
-#'    from the results of lm()
-#'
-#'    pval: The uncorrected anova pvalue of the model, retrieved from
-#'    anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-#'
-#'    r.sq: The coefficient of determination between the real total expression
-#'    values and the imputed GReX, retrived from summary(model)$r.squared
-#'
-#'    correctedP: The p value after the benjamini-hochberg correction for
-#'    multiple testing, retrived using p.adjust(pvalues, method="BH")
-#' @import SummarizedExperiment BiocParallel
-#' @export
-#'
-#' @examples
-#' if (interactive()) {
-#' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
-#' package="AffiXcan")
-#'
-#' data(exprMatrix)
-#' data(regionAssoc)
-#' data(trainingCovariates)
-#'
-#' assay <- "values"
-#'
-#' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
-#' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-#' varExplained=80, scale=TRUE)
-#'
-#' pca <- training$pca 
-#'
-#' bs <- affiXcanBs(exprMatrix=exprMatrix, assay=assay, regionAssoc=regionAssoc,
-#' pca=pca, cov=trainingCovariates)
-#' }
-affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov,
-                       BPPARAM=bpparam()) {
-    expr <- SummarizedExperiment::assays(exprMatrix)[[assay]]
-    tDfExprMatrix<-t(as.data.frame(expr))
-
-    expressedRegions <- as.vector(unique(regionAssoc$EXPRESSED_REGION))
-    assocList <- BiocParallel::bplapply(X=expressedRegions, FUN=assoc2list,
-        regionAssoc, BPPARAM=BPPARAM)
-    names(assocList) <- expressedRegions
-
-    bs <- BiocParallel::bplapply(X=assocList, FUN=computeBs, pca,
-        tDfExprMatrix, cov, BPPARAM=BPPARAM)
-
-    ## Remove ensg for which the model is NA
-    for(i in names(bs)) {
-        if(is.na(bs[[i]]$r.sq)) {
-            bs[[i]] <- NULL
-        }
-    }
-
-    ## Compute multitest pvalue correction (benjamini-hochberg)
-    pvalues <- vector("numeric", length=length(bs))
-    
-    for(i in seq(1:length(pvalues))) {
-        pvalues[[i]] <- bs[[i]]$pval
-    }
-    
-    multi.test.pvals <- p.adjust(pvalues, method="BH")
-    
-    for(i in seq(1:length(bs))) {
-        bs[[i]]$correctedP <- multi.test.pvals[[i]]
-    }
-    
-    return(bs)
-}
-
-#' Reorganize associations table in a list
-#'
-#' @param gene A string; the name of an expressed gene
-#' @param regionAssoc A data.frame with the associations between regulatory
-#' regions and expressed genes, and with colnames = c("REGULATORY_REGION",
-#' "EXPRESSED_REGION")
-#'
-#' @return A list of data frames, each of which has the same structure of the
-#' param regionAssoc, except that contains the information relative to one
-#' expressed gene
-#' @export
-#'
-#' @examples
-#' if (interactive()) {
-#' data(regionAssoc)
-#' expressedRegions <- as.list(as.vector(unique(regionAssoc$EXPRESSED_REGION)))
-#' gene <- expressedRegions[[1]]
-#' assocList <- assoc2list(gene, regionAssoc)
-#' }
-assoc2list <- function(gene, regionAssoc) {
-    return(regionAssoc[regionAssoc$EXPRESSED_REGION==gene,])
-}
-
-#' Compute a GReX from variables and their coefficients for a set of genes
-#'
-#' @param affiXcanTraining The returning object from affiXcanTrain()
-#' @param pcs A list, which is the returning object from affiXcanPcs()
-#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
-#' details on BiocParallelParam virtual base class see 
-#' browseVignettes("BiocParallel")
-#'
-#' @return A SummarizedExperiment object containing the imputed GReX values
-#' @import SummarizedExperiment BiocParallel 
-#' @export
-#'
-#' @examples
-#' if (interactive()) {
-#' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
-#' package="AffiXcan")
-#'
-#' data(exprMatrix)
-#' data(regionAssoc)
-#' data(trainingCovariates)
-#'
-#' assay <- "values"
-#'
-#' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
-#' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-#' varExplained=80, scale=TRUE)
-#'
-#' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
-#' package="AffiXcan")
-#'
-#' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
-#' scale=TRUE)
-#'
-#' bs <- training$bs
-#'
-#' exprmatrix <- affiXcanGReX(affiXcanTraining=training, pcs=pcs)
-#' }
-affiXcanGReX <- function(affiXcanTraining, pcs, BPPARAM=bpparam()) {
-    bs <- affiXcanTraining$bs
-    
-    expr <- BiocParallel::bplapply(X=bs, FUN=computeExpr, pcs, BPPARAM=BPPARAM)
-
-    exprmatrix <- matrix(nrow = nrow(pcs[[1]]), ncol=0)
-    rownames(exprmatrix) <- rownames(pcs[[1]])
-    
-    for(i in seq(1:length(expr))) {
-        if(is.na(expr[[i]][[1]])==FALSE) {
-            exprMatrixPart <- matrix(expr[[i]], ncol=1)
-            colnames(exprMatrixPart)[[1]] <- ls(expr[i])
-            exprMatrixPart <- as.matrix(exprMatrixPart, ncol=1)
-            exprmatrix <- cbind(exprmatrix, exprMatrixPart)
-        }
-    }
-    
-    ## TODO: eventually include a colData given by the user in the SE object
-    Summarized.GReX <- SummarizedExperiment(assays=list(GReX=t(exprmatrix)))
-    
-    return(Summarized.GReX)
-}
-
 #' Perform a PCA on a matrix where columns are variables
 #'
 #' @param data A matrix containing the TBA values for a certain genomic region;
 #' columns are PWMs, rows are individuals IIDs
 #' @param varExplained An integer between 0 and 100; varExplained=80 means that
 #' the principal components selected to fit the models must explain at least
-#' 80 percent of variation of TBA values
+#' 80 percent of variation of TBA values; default is 80
 #' @param scale A logical; if scale=FALSE the TBA values will be only centered,
-#' not scaled before performing PCA
+#' not scaled before performing PCA; default is TRUE
 #'
 #' @return A list containing two objects:
 #' 
@@ -489,16 +267,27 @@ affiXcanGReX <- function(affiXcanTraining, pcs, BPPARAM=bpparam()) {
 #'
 #' @examples
 #' if (interactive()) {
+#' data(exprMatrix)
+#' sampleNames <- colnames(exprMatrix)
+#' nSamples <- length(sampleNames)
+#' sampGroups <- subsetKFold(k=3, n=nSamples)
+#' for (i in seq(length(sampGroups))) {
+#'      sampGroups[[i]] <- colnames(exprMatrix)[sampGroups[[i]]]
+#' }
+#' testingSamples <- sampGroups[[i]]
+#' trainingSamples <- sampleNames[!sampleNames %in% testingSamples]
+#'
 #' tbaMatrixMAE <- readRDS(system.file("extdata","training.tba.toydata.rds",
 #' package="AffiXcan"))
-#'
+#' tbaMatrixMAE <- MultiAssayExperiment::subsetByRow(tbaMatrixMAE,
+#'                                                   trainingSamples)
 #' tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
-#' 
 #' tba <- tbaMatrix$ENSG00000256377.1
 #'
 #' pca <- computePca(data=tba, varExplained=80, scale=TRUE)
+#' 
 #' }
-computePca <- function(data, varExplained, scale) {
+computePca <- function(data, varExplained=80, scale=TRUE) {
 
     tryCatch (
         {
@@ -541,6 +330,359 @@ computePca <- function(data, varExplained, scale) {
             return(list(eigenvectors=wantedEigenvectors, pcs=wantedPcs))
         }
     )
+}
+
+#' Fit a linear model and compute ANOVA p value
+#'
+#' @param exprMatrix A SummarizedExperiment object containing expression data
+#' @param assay A string with the name of the object in
+#' SummarizedExperiment::assays(exprMatrix) that contains expression values
+#' @param regionAssoc A data.frame with the associations between regulatory
+#' regions and expressed genes, and with colnames = c("REGULATORY_REGION",
+#' "EXPRESSED_REGION")
+#' @param pca A list, which is the returningObject$pca from affiXcanPca()
+#' @param cov A data.frame with covariates values for the population structure
+#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
+#' details on BiocParallelParam virtual base class see 
+#' browseVignettes("BiocParallel")
+#' @param trainingSamples A vector of strings. The identifiers (e.g. row names
+#' of MultiAssayExperiment objects from tbaPaths) of the samples that have to
+#' be considered in the training phase, and not used for the cross-validation
+#'
+#' @return A list containing lists named as the REGULATORY_REGIONS found in the
+#' param regionAssoc that have a correspondent name in the param pca.
+#' Each of these lists contain three objects:
+#'
+#'    coefficients: An object containing the coefficients of the principal
+#'    components used in the model, completely similar to the "coefficients"
+#'    from the results of lm()
+#'
+#'    pval: The uncorrected anova pvalue of the model, retrieved from
+#'    anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+#'
+#'    r.sq: The coefficient of determination between the real total expression
+#'    values and the imputed GReX, retrived from summary(model)$r.squared
+#'
+#' @import SummarizedExperiment BiocParallel
+#' @export
+#'
+#' @examples
+#' if (interactive()) {
+#' data(exprMatrix)
+#' data(trainingCovariates)
+#' data(regionAssoc)
+#'
+#' tbaPaths <- system.file("extdata","training.tba.toydata.rds",
+#' package="AffiXcan")
+#' regionsCount <- overlookRegions(tbaPaths)
+#' assay <- "values"
+#'
+#' sampleNames <- colnames(exprMatrix)
+#' nSamples <- length(sampleNames)
+#' sampGroups <- subsetKFold(k=5, n=nSamples)
+#' for (i in seq(length(sampGroups))) {
+#'      sampGroups[[i]] <- colnames(exprMatrix)[sampGroups[[i]]]
+#' }
+#' 
+#' testingSamples <- sampGroups[[1]]
+#' trainingSamples <- sampleNames[!sampleNames %in% testingSamples]
+#'
+#' pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE,
+#' regionsCount=regionsCount, trainingSamples=trainingSamples)
+#'
+#' bs <- affiXcanBs(exprMatrix=exprMatrix, assay=assay, regionAssoc=regionAssoc,
+#' pca=pca, cov=trainingCovariates, trainingSamples=trainingSamples)
+#' }
+affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov,
+                       BPPARAM=bpparam(), trainingSamples) {
+
+    cov <- cov[rownames(cov) %in% trainingSamples,]
+    
+    expr <- SummarizedExperiment::assays(exprMatrix)[[assay]]
+    expr <- expr[,colnames(expr) %in% trainingSamples]
+    tDfExprMatrix<-t(as.data.frame(expr))
+
+    expressedRegions <- as.vector(unique(regionAssoc$EXPRESSED_REGION))
+    assocList <- BiocParallel::bplapply(X=expressedRegions, FUN=assoc2list,
+        regionAssoc, BPPARAM=BPPARAM)
+    names(assocList) <- expressedRegions
+
+    bs <- BiocParallel::bplapply(X=assocList, FUN=computeBs, pca,
+        tDfExprMatrix, cov, BPPARAM=BPPARAM)
+
+    ## Remove ensg for which the model is NA
+    for(i in names(bs)) {
+        if(is.na(bs[[i]]$r.sq)) {
+            bs[[i]] <- NULL
+        }
+    }
+
+    ## ANOVA is not performed anymore (changes in version 1.3.1)
+
+    ## Compute multitest pvalue correction (benjamini-hochberg)
+    #pvalues <- vector("numeric", length=length(bs))
+    #
+    #for(i in seq(1:length(pvalues))) {
+    #    pvalues[[i]] <- bs[[i]]$pval
+    #}
+    #
+    #multi.test.pvals <- p.adjust(pvalues, method="BH")
+    #
+    #for(i in seq(1:length(bs))) {
+    #    bs[[i]]$correctedP <- multi.test.pvals[[i]]
+    #}
+    
+    return(bs)
+}
+
+#' Reorganize associations table in a list
+#'
+#' @param gene A string; the name of an expressed gene
+#' @param regionAssoc A data.frame with the associations between regulatory
+#' regions and expressed genes, and with colnames = c("REGULATORY_REGION",
+#' "EXPRESSED_REGION")
+#'
+#' @return A list of data frames, each of which has the same structure of the
+#' param regionAssoc, except that contains the information relative to one
+#' expressed gene
+#' @export
+#'
+#' @examples
+#' if (interactive()) {
+#' data(regionAssoc)
+#' expressedRegions <- as.list(as.vector(unique(regionAssoc$EXPRESSED_REGION)))
+#' gene <- expressedRegions[[1]]
+#' assocList <- assoc2list(gene, regionAssoc)
+#' }
+assoc2list <- function(gene, regionAssoc) {
+    return(regionAssoc[regionAssoc$EXPRESSED_REGION==gene,])
+}
+
+#' Fit a linear model to impute a GReX for a certain gene
+#'
+#' @param assocRegions A data.frame with the associations between regulatory
+#' regions and one expressed gene, and with colnames = c("REGULATORY_REGION",
+#' "EXPRESSED_REGION")
+#' @param pca The returningObject$pca from affiXcanTrain()
+#' @param expr A matrix containing the real total expression values, where the
+#' columns are genes and the rows are individual IIDs
+#' @param covariates A data.frame with covariates values for the population
+#' structure where the columns are the PCs and the rows are the individual IIDs
+#'
+#' @return A list containing three objects:
+#'
+#'    coefficients: An object containing the coefficients of the principal
+#'    components used in the model, completely similar to the "coefficients"
+#'    from the results of lm()
+#'
+#'    pval: The uncorrected anova pvalue of the model, retrieved from
+#'    anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+#'
+#'    r.sq: The coefficient of determination between the real total expression
+#'    values and the imputed GReX, retrived from summary(model)$r.squared
+#' @export
+#'
+#' @examples
+#' if (interactive()) {
+#' data(exprMatrix)
+#' data(trainingCovariates)
+#' data(regionAssoc)
+#'
+#' tbaPaths <- system.file("extdata","training.tba.toydata.rds",
+#' package="AffiXcan")
+#' regionsCount <- overlookRegions(tbaPaths)
+#' assay <- "values"
+#'
+#' sampleNames <- colnames(exprMatrix)
+#' nSamples <- length(sampleNames)
+#' sampGroups <- subsetKFold(k=5, n=nSamples)
+#' for (i in seq(length(sampGroups))) {
+#'      sampGroups[[i]] <- colnames(exprMatrix)[sampGroups[[i]]]
+#' }
+#' 
+#' testingSamples <- sampGroups[[1]]
+#' trainingSamples <- sampleNames[!sampleNames %in% testingSamples]
+#'
+#' pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE,
+#' regionsCount=regionsCount, trainingSamples=trainingSamples)
+#'
+#' cov <- trainingCovariates
+#' cov <- cov[rownames(cov) %in% trainingSamples,]
+#'
+#' expr <- SummarizedExperiment::assays(exprMatrix)[[assay]]
+#' expr <- expr[,colnames(expr) %in% trainingSamples]
+#' expr <- t(as.data.frame(expr))
+#'
+#' expressedRegions <- as.vector(unique(regionAssoc$EXPRESSED_REGION))
+#' assocList <- BiocParallel::bplapply(X=expressedRegions, FUN=assoc2list,
+#' regionAssoc)
+#' names(assocList) <- expressedRegions
+#' assocRegions <- assocList[[1]]
+#'
+#' bs <- computeBs(assocRegions=assocRegions, pca=pca, expr=expr,
+#' covariates=cov)
+#' }
+computeBs <- function(assocRegions, pca, expr, covariates) {
+    expressedRegion <- as.vector(unique(assocRegions$EXPRESSED_REGION))
+    expression <- as.vector(as.data.frame(expr)[[expressedRegion]])
+    tryCatch (
+        {
+            myPcs <- as.data.frame(matrix(nrow = nrow(covariates)))
+            myPcsColnames <- vector("character")
+
+            for(regulRegion in assocRegions$REGULATORY_REGION) {
+
+                ## Discards the pcs for those regions that are NA in the model
+                if(is.null(pca[[regulRegion]]$pcs[[1]]) ||
+                    is.na(pca[[regulRegion]]$pcs[[1]])) {
+
+                    next
+
+                } else {
+
+                    nNames <- length(colnames(pca[[regulRegion]]$pcs))
+                    regionColnames <- colnames(pca[[regulRegion]]$pcs)
+                    regionColnames <- paste(regionColnames, regulRegion,
+                                                                    sep="@")
+                    myPcsColnames <- c(myPcsColnames, regionColnames)
+                    regulRegionPcs <- pca[[regulRegion]]$pcs
+                    myPcs <- cbind(myPcs, regulRegionPcs)
+
+                }
+            }
+
+            myPcsColnames <- c(myPcsColnames, names(covariates))
+            myPcs <- cbind(myPcs, covariates)
+            myPcs <- as.matrix(subset(myPcs, select=-V1))
+            colnames(myPcs) = myPcsColnames
+
+            model <- lm(expression~myPcs)
+            modelReduced <- lm(expression~as.matrix(covariates))
+            a <- anova(model, modelReduced, test="F")
+            pval <- a$'Pr(>F)'[2]
+
+            betas <- model$coefficients[seq(1,
+                (length(model$coefficients)-length(names(covariates))))]
+            r.sq <- summary(model)$r.squared
+            results <- list(coefficients=betas, pval=pval, r.sq=r.sq)
+            return(results)
+        },
+        error = function(e) {
+            ## TODO: throw warning
+            betas <- NA
+            pval <- NA
+            r.sq <- NA
+            results <- list(coefficients=betas, pval=pval, r.sq=r.sq)
+            return(results)
+        }
+    )
+}
+
+#' Count the number of genomic regions on which the TBA was computed
+#'
+#' @param tbaPaths, A vector of strings, which are the paths to
+#' MultiAssayExperiment RDS files containing the tba values
+#'
+#' @return An integer, that is the summation of length(assays()) of every
+#' MultiAssayExperiment RDS object indicated in the param tbaPaths
+#' @import MultiAssayExperiment
+#' @export
+#'
+#' @examples
+#' if (interactive()) {
+#' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
+#' package="AffiXcan")
+#'
+#' regionsCount <- overlookRegions(tbaPaths=testingTbaPaths)
+#' }
+overlookRegions <- function(tbaPaths) {
+
+    regionsCount <- 0 
+    
+    for(path in tbaPaths) {
+        tba <- readRDS(path)
+        assaysNum <- length(assays(tba))
+        regionsCount <- regionsCount + assaysNum
+    }
+
+    return(regionsCount)
+    
+}
+
+#' Compute PCs in MultiAssayExperiment objects using eigenvectors given by user
+#'
+#' @param tbaPaths A vector of strings, which are the paths to
+#' MultiAssayExperiment RDS files containing the tba values
+#' @param affiXcanTraining The returning object from affiXcanTrain()
+#' @param scale A logical; if scale=FALSE the TBA values will be only centered,
+#' not scaled before performing PCA
+#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
+#' details on BiocParallelParam virtual base class see 
+#' browseVignettes("BiocParallel")
+#' @param testingSamples A vector of strings. The identifiers (e.g. row names
+#' of MultiAssayExperiment objects from tbaPaths) of the samples that have not
+#' been considered in the training phase, to be used in the cross-validation;
+#' default is NULL; if is.null(testingSamples)==TRUE then no filtering is
+#' performed
+#'
+#' @return A list of matrices containing the principal components values of TBA
+#' for each region; each object of the list is named after the
+#' MultiAssayExperiment object from which it derives
+#' @import MultiAssayExperiment BiocParallel
+#' @export
+#'
+#' @examples
+#' if (interactive()) {
+#' data(exprMatrix)
+#' data(trainingCovariates)
+#' data(regionAssoc)
+#'
+#' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
+#' package="AffiXcan")
+#' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
+#' package="AffiXcan")
+#'
+#' assay <- "values"
+#'
+#' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
+#' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
+#' varExplained=80, scale=TRUE)
+#'
+#' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
+#' scale=TRUE)
+#' }
+affiXcanPcs <- function(tbaPaths, affiXcanTraining, scale, BPPARAM=bpparam(),
+                        testingSamples=NULL) {
+
+    pcs <- vector("list", affiXcanTraining$regionsCount)
+    index <- 0
+
+    for(i in seq(1,length(tbaPaths))) {
+
+        pca <- affiXcanTraining$pca
+        tbaMatrixMAE <- readRDS(tbaPaths[i])
+        
+        if (is.null(testingSamples)==FALSE) {
+            tbaMatrixMAE <- MultiAssayExperiment::subsetByRow(tbaMatrixMAE,
+                                                              testingSamples)
+        }
+        
+        tbaMatrix <- MultiAssayExperiment::experiments(tbaMatrixMAE)
+        regionsList <- setNames(as.list(names(tbaMatrix)), names(tbaMatrix))
+        
+        newPcs <- BiocParallel::bplapply(X=regionsList, FUN=computePcs,
+            tbaMatrix, scale, pca, BPPARAM=BPPARAM)
+        
+        for(l in seq(1,length(newPcs))) {
+            pcs[index + l] <- newPcs[l]
+            names(pcs)[index + l] <- names(newPcs)[l]
+        }
+
+        index <- index + length(newPcs)
+    
+    }
+
+    return(pcs)
 }
 
 #' Compute a matrix product between variables and eigenvectors
@@ -602,28 +744,16 @@ computePcs <- function(region, tbaMatrix, scale, pca) {
     )
 }
 
-#' Fit a linear model to impute a GReX for a certain gene
+#' Compute a GReX from variables and their coefficients for a set of genes
 #'
-#' @param assocRegions A data.frame with the associations between regulatory
-#' regions and one expressed gene, and with colnames = c("REGULATORY_REGION",
-#' "EXPRESSED_REGION")
-#' @param pca The returningObject$pca from affiXcanTrain()
-#' @param expr A matrix containing the real total expression values, where the
-#' columns are genes and the rows are individual IIDs
-#' @param covariates A data.frame with covariates values for the population
-#' structure where the columns are the PCs and the rows are the individual IIDs
+#' @param affiXcanTraining The returning object from affiXcanTrain()
+#' @param pcs A list, which is the returning object from affiXcanPcs()
+#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
+#' details on BiocParallelParam virtual base class see 
+#' browseVignettes("BiocParallel")
 #'
-#' @return A list containing three objects:
-#'
-#'    coefficients: An object containing the coefficients of the principal
-#'    components used in the model, completely similar to the "coefficients"
-#'    from the results of lm()
-#'
-#'    pval: The uncorrected anova pvalue of the model, retrieved from
-#'    anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-#'
-#'    r.sq: The coefficient of determination between the real total expression
-#'    values and the imputed GReX, retrived from summary(model)$r.squared
+#' @return A SummarizedExperiment object containing the imputed GReX values
+#' @import SummarizedExperiment BiocParallel 
 #' @export
 #'
 #' @examples
@@ -637,73 +767,39 @@ computePcs <- function(region, tbaMatrix, scale, pca) {
 #'
 #' assay <- "values"
 #'
-#' assocRegions <- regionAssoc[regionAssoc$EXPRESSED_REGION==
-#' "ENSG00000256377.1",]
+#' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
+#' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
+#' varExplained=80, scale=TRUE)
 #'
-#' regionsCount <- overlookRegions(trainingTbaPaths)
+#' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
+#' package="AffiXcan")
 #'
-#' pca <- affiXcanPca(tbaPaths=trainingTbaPaths, varExplained=80, scale=TRUE,
-#' regionsCount=regionsCount)
+#' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
+#' scale=TRUE)
 #'
-#' expr <- SummarizedExperiment::assays(exprMatrix)[[assay]]
-#' expr <- t(as.data.frame(expr))
-#'
-#' bs <- computeBs(assocRegions=assocRegions, pca=pca, expr=expr,
-#' covariates=trainingCovariates)
+#' exprmatrix <- affiXcanGReX(affiXcanTraining=training, pcs=pcs)
 #' }
-computeBs <- function(assocRegions, pca, expr, covariates) {
-    expressedRegion <- as.vector(unique(assocRegions$EXPRESSED_REGION))
-    expression <- as.vector(as.data.frame(expr)[[expressedRegion]])
-    tryCatch (
-        {
-            myPcs <- as.data.frame(matrix(nrow = nrow(covariates)))
-            myPcsColnames <- vector("character")
+affiXcanGReX <- function(affiXcanTraining, pcs, BPPARAM=bpparam()) {
+    bs <- affiXcanTraining$bs
+    
+    expr <- BiocParallel::bplapply(X=bs, FUN=computeExpr, pcs, BPPARAM=BPPARAM)
 
-            for(regulRegion in assocRegions$REGULATORY_REGION) {
-
-                ## Discards the pcs for those regions that are NA in the model
-                if(is.null(pca[[regulRegion]]$pcs[[1]]) ||
-                    is.na(pca[[regulRegion]]$pcs[[1]])) {
-
-                    next
-
-                } else {
-
-                    nNames <- length(colnames(pca[[regulRegion]]$pcs))
-                    regionColnames <- colnames(pca[[regulRegion]]$pcs)
-                    regionColnames <- paste(regionColnames, regulRegion,
-                                                                    sep="@")
-                    myPcsColnames <- c(myPcsColnames, regionColnames)
-                    regulRegionPcs <- pca[[regulRegion]]$pcs
-                    myPcs <- cbind(myPcs, regulRegionPcs)
-
-                }
-            }
-
-            myPcsColnames <- c(myPcsColnames, names(covariates))
-            myPcs <- cbind(myPcs, covariates)
-            myPcs <- as.matrix(subset(myPcs, select=-V1))
-            colnames(myPcs) = myPcsColnames
-
-            model <- lm(expression~myPcs)
-            modelReduced <- lm(expression~as.matrix(covariates))
-            a <- anova(model, modelReduced, test="F")
-            pval <- a$'Pr(>F)'[2]
-
-            betas <- model$coefficients[seq(1,
-                (length(model$coefficients)-length(names(covariates))))]
-            r.sq <- summary(model)$r.squared
-            results <- list(coefficients=betas, pval=pval, r.sq=r.sq)
-            return(results)
-        },
-        error = function(e) {
-            betas <- NA
-            pval <- NA
-            r.sq <- NA
-            results <- list(coefficients=betas, pval=pval, r.sq=r.sq)
-            return(results)
+    exprmatrix <- matrix(nrow = nrow(pcs[[1]]), ncol=0)
+    rownames(exprmatrix) <- rownames(pcs[[1]])
+    
+    for(i in seq(1:length(expr))) {
+        if(is.na(expr[[i]][[1]])==FALSE) {
+            exprMatrixPart <- matrix(expr[[i]], ncol=1)
+            colnames(exprMatrixPart)[[1]] <- ls(expr[i])
+            exprMatrixPart <- as.matrix(exprMatrixPart, ncol=1)
+            exprmatrix <- cbind(exprmatrix, exprMatrixPart)
         }
-    )
+    }
+    
+    ## TODO: possibly include a colData given by the user in the SE object
+    Summarized.GReX <- SummarizedExperiment(assays=list(GReX=t(exprmatrix)))
+    
+    return(Summarized.GReX)
 }
 
 #' Compute the imputed GReX for a certain gene on a set of individuals
@@ -721,10 +817,7 @@ computeBs <- function(assocRegions, pca, expr, covariates) {
 #'    values and the imputed GReX, retrived from summary(model)$r.squared
 #' @param pcs A list, which is the returning object of affiXcanPcs()
 #'
-#' @return A summarizedExperiment object; 
-#' SummarizedExperiment::assays(returningObject)$GReX is a matrix containing the
-#' imputed GReX values
-#' @import SummarizedExperiment
+#' @return A vector of imputed GReX values
 #' @export
 #'
 #' @examples
@@ -748,57 +841,232 @@ computeBs <- function(assocRegions, pca, expr, covariates) {
 #' pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
 #' scale=TRUE)
 #'
-#' bs <- training$bs
+#' region <- "ENSG00000256377.1"
+#' bs <- training$bs[[region]]
 #'
 #' exprmatrix <- computeExpr(bs=bs, pcs=pcs)
 #' }
 computeExpr <- function(bs, pcs) {
 
     tryCatch (
-        {
-            if(is.na(bs$correctedP) == TRUE || bs$correctedP > 0.05) {
+        {   
+            ## ANOVA p-value is not used anymore (changes in version 1.3.1)
+            #if(is.na(bs$correctedP) == TRUE || bs$correctedP > 0.05) {
+            #    exprVector <- NA
+            #    return(exprVector)
+            #} else {
+            
+            ## create vector with all regulatory region names associated
+            ## with the expressed region
+            regulRegions <- names(bs$coefficients[-1])
+            for(i in seq(1:length(regulRegions))) {
 
-                exprVector <- NA
-                return(exprVector)
+                name <- strsplit(regulRegions[[i]], split="@", fixed=TRUE)
+                regulRegions[[i]] <- name[[1]][[2]]
 
-            } else {
-
-                ## create vector with all regulatory region names associated
-                ## with the expressed region
-                regulRegions <- names(bs$coefficients[-1])
-                for(i in seq(1:length(regulRegions))) {
-
-                    name <- strsplit(regulRegions[[i]], split="@", fixed=TRUE)
-                    regulRegions[[i]] <- name[[1]][[2]]
-
-                }
-                regulRegions <- unique(regulRegions)
-                ## create data frame with all the predictors 
-                pcVals <- as.data.frame(matrix(nrow = nrow(pcs[[regulRegions]]),
-                    ncol=0))
-                rownames(pcVals) <- as.vector(rownames(pcs[[regulRegions]]))
-                for(region in regulRegions) {
-                    pcValsPart <- pcs[[region]]
-                    colnames(pcValsPart) <- paste(colnames(pcValsPart), "@",
-                        region, sep="")
-                    pcVals <- cbind(pcVals, pcValsPart)
-                }
-                ## create vector with imputed expression values
-                exprVector <- vector(mode="numeric", length=nrow(pcVals))
-                intercept <- bs$coefficients[[1]]
-                coefficients <- as.vector(bs$coefficients[-1])
-                for(j in seq(1, nrow(pcVals))) {
-                    expr <- sum(coefficients * as.vector(pcVals[j, ]))
-                        + intercept
-                    exprVector[j] <- expr
-                }
-
-                return(exprVector)
             }
+            regulRegions <- unique(regulRegions)
+            ## create data frame with all the predictors 
+            pcVals <- as.data.frame(matrix(nrow = nrow(pcs[[regulRegions]]),
+                ncol=0))
+            rownames(pcVals) <- as.vector(rownames(pcs[[regulRegions]]))
+            for(region in regulRegions) {
+                pcValsPart <- pcs[[region]]
+                colnames(pcValsPart) <- paste(colnames(pcValsPart), "@",
+                    region, sep="")
+                pcVals <- cbind(pcVals, pcValsPart)
+            }
+            ## create vector with imputed expression values
+            exprVector <- vector(mode="numeric", length=nrow(pcVals))
+            intercept <- bs$coefficients[[1]]
+            coefficients <- as.vector(bs$coefficients[-1])
+            for(j in seq(1, nrow(pcVals))) {
+                expr <- sum(coefficients * as.vector(pcVals[j, ]))
+                    + intercept
+                exprVector[j] <- expr
+            }
+
+            return(exprVector) 
         },
         error = function(e) {
             exprVector <- NA
             return(exprVector)
         }
     )
+}
+
+#' Compute R and R^2 between rows of two SummarizedExperiment assays
+#'
+#' @param realExpr A SummarizedExperiment object containing expression data
+#' @param imputedExpr The returning object of affiXcanImpute()
+#' @param assay A string with the name of the object in
+#' SummarizedExperiment::assays(realExpr) that contains expression values
+#' @param testingSamples A vector of strings. The identifiers of the samples
+#' that have to be considered by the function; default is NULL; if 
+#' is.null(testingSamples)==TRUE then no filtering is performed
+#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
+#' details on BiocParallelParam virtual base class see 
+#' browseVignettes("BiocParallel")
+#'
+#' @return A list of lists; inner lists are named after the rows for which the
+#' correlation between realExpr and imputedExpr have been computed; inner
+#' lists contain two objects:
+#'      
+#'      pearson: the pearson's correlation coefficient (R) between the real
+#'      expression values and the imputed GReX for the cross-validation i on
+#'      the expressed gene y, computed with cor()
+#'
+#'      rSquared: the coefficient of determination (R^2) between the real
+#'      expression values and the imputed GReX for the cross-validation i on
+#'      the expressed gene y, computed as pearson^2
+#' @import SummarizedExperiment BiocParallel
+#' @export
+#'
+#' @examples
+#' if (interactive()) {
+#' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
+#' package="AffiXcan")
+#' 
+#' data(exprMatrix)
+#' data(regionAssoc)
+#' data(trainingCovariates)
+#' 
+#' assay <- "values"
+#' 
+#' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
+#' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
+#' varExplained=80, scale=TRUE)
+#' 
+#' imputedExpr <- affiXcanImpute(tbaPaths=trainingTbaPaths,
+#' affiXcanTraining=training, scale=TRUE)
+#' realExpr <- exprMatrix
+#' 
+#' correlation <- computeRSquared(realExpr, imputedExpr, assay)
+#' }
+computeRSquared <- function(realExpr, imputedExpr, assay,
+                            testingSamples=NULL, BPPARAM=bpparam()) {
+    geneNames <- rownames(imputedExpr)
+    names(geneNames) <- geneNames
+
+    if (is.null(testingSamples)==FALSE) {
+        realExpr <- realExpr[,colnames(exprMatrix) %in% testingSamples]
+    }
+   
+    ## check/correct the consistency of the order of the samples
+    if(is.na(table(colnames(imputedExpr)==colnames(realExpr))['FALSE'])==FALSE){
+        imputedExpr <- imputedExpr[,colnames(realExpr)]
+    }
+    
+    imputedExpr <- SummarizedExperiment::assays(imputedExpr)$GReX
+    realExpr <- SummarizedExperiment::assays(realExpr)[[assay]] 
+    correlation <- BiocParallel::bplapply(X=geneNames, FUN=computeCorrelation,
+                                       realExpr, imputedExpr, BPPARAM=BPPARAM)
+    return(correlation)
+}
+
+#' Compute R and R^2 on a particular row of two SummarizedExperiment assays
+#'
+#' @param geneName A string. The row name in realExpr and imputedExpr objects
+#' that identifies the vectors between which R and R^2 have to be computed
+#' @param realExpr A SummarizedExperiment object containing expression data
+#' @param imputedExpr The returning object of affiXcanImpute()
+#'
+#' @return A list of two objects:
+#'      
+#'      pearson: the pearson's correlation coefficient (R) between the real
+#'      expression values and the imputed GReX for the cross-validation i on
+#'      the expressed gene y, computed with cor()
+#'
+#'      rSquared: the coefficient of determination (R^2) between the real
+#'      expression values and the imputed GReX for the cross-validation i on
+#'      the expressed gene y, computed as pearson^2
+#' @export
+#'
+#' @examples
+#' if (interactive()) {
+#' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
+#' package="AffiXcan")
+#' 
+#' data(exprMatrix)
+#' data(regionAssoc)
+#' data(trainingCovariates)
+#' 
+#' assay <- "values"
+#' 
+#' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
+#' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
+#' varExplained=80, scale=TRUE)
+#' 
+#' imputedExpr <- affiXcanImpute(tbaPaths=trainingTbaPaths,
+#' affiXcanTraining=training, scale=TRUE)
+#' realExpr <- exprMatrix
+#' 
+#' geneName <- "ENSG00000256377.1"
+#' imputedExpr <- SummarizedExperiment::assays(imputedExpr)$GReX
+#' realExpr <- SummarizedExperiment::assays(realExpr)[[assay]]
+#'
+#' correlation <- computeCorrelation(geneName, realExpr, imputedExpr) 
+#' }
+computeCorrelation <- function(geneName, realExpr, imputedExpr) {
+    realExpr <- realExpr[rownames(realExpr)==geneName]
+    imputedExpr <- imputedExpr[rownames(imputedExpr)==geneName]
+    pearson <- cor(imputedExpr, realExpr)
+    rSquared <- pearson^2
+    correlation <- list("pearson"=pearson, "rSquared"=rSquared)
+    return(correlation)
+}
+
+#' Impute a GReX for each gene for which a model was generated
+#'
+#' @param tbaPaths A vector of strings, which are the paths to
+#' MultiAssayExperiment RDS files containing the tba values
+#' @param affiXcanTraining The returning object from affiXcanTrain()
+#' @param scale A logical; if scale=FALSE the TBA values will be only centered,
+#' not scaled before performing PCA; default is TRUE
+#' @param BPPARAM A BiocParallelParam object. Default is bpparam(). For
+#' details on BiocParallelParam virtual base class see 
+#' browseVignettes("BiocParallel")
+#'
+#' @return A SummarizedExperiment object containing imputed GReX values
+#' @import MultiAssayExperiment SummarizedExperiment BiocParallel
+#' @export
+#'
+#' @examples
+#' if (interactive()) {
+#' trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
+#' package="AffiXcan")
+#'
+#' data(exprMatrix)
+#' data(regionAssoc)
+#' data(trainingCovariates)
+#'
+#' assay <- "values"
+#'
+#' training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
+#' tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
+#' varExplained=80, scale=TRUE)
+#'
+#' testingTbaPaths <- system.file("extdata","testing.tba.toydata.rds",
+#' package="AffiXcan")
+#' 
+#' exprmatrix <- affiXcanImpute(tbaPaths=testingTbaPaths,
+#' affiXcanTraining=training, scale=TRUE)
+#' }
+affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale=TRUE,
+                           BPPARAM=bpparam()) {
+    regionsCount <- overlookRegions(tbaPaths)
+    if(regionsCount!=affiXcanTraining$regionsCount) {
+        warning(cat("The amount of genomic regions included in the training
+                    phase is different from those found in the TBA matrices:\n
+                    TBA in the training set was computed on ",
+                    affiXcanTraining$regionsCount, " regions\n TBA provided in
+                    tbaPaths refers to ", regionsCount, " regions\n"))
+    }
+    cat("\nAffiXcan: Imputing Genetically Regulated Expression (GReX)\n")
+    cat("\n\t--> Computing principal components")
+    pcs <- affiXcanPcs(tbaPaths, affiXcanTraining, scale, BPPARAM)
+    cat("\n\t--> Imputing GReX values\n")
+    exprmatrix <- affiXcanGReX(affiXcanTraining, pcs, BPPARAM)
+    cat("\tDone!\n")
+    return(exprmatrix)
 }

@@ -4,7 +4,8 @@
 \alias{affiXcanBs}
 \title{Fit a linear model and compute ANOVA p value}
 \usage{
-affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov, BPPARAM = bpparam())
+affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov, BPPARAM = bpparam(),
+  trainingSamples)
 }
 \arguments{
 \item{exprMatrix}{A SummarizedExperiment object containing expression data}
@@ -23,11 +24,15 @@ regions and expressed genes, and with colnames = c("REGULATORY_REGION",
 \item{BPPARAM}{A BiocParallelParam object. Default is bpparam(). For
 details on BiocParallelParam virtual base class see 
 browseVignettes("BiocParallel")}
+
+\item{trainingSamples}{A vector of strings. The identifiers (e.g. row names
+of MultiAssayExperiment objects from tbaPaths) of the samples that have to
+be considered in the training phase, and not used for the cross-validation}
 }
 \value{
 A list containing lists named as the REGULATORY_REGIONS found in the
 param regionAssoc that have a correspondent name in the param pca.
-Each of these lists contains three objects:
+Each of these lists contain three objects:
 
    coefficients: An object containing the coefficients of the principal
    components used in the model, completely similar to the "coefficients"
@@ -38,31 +43,35 @@ Each of these lists contains three objects:
 
    r.sq: The coefficient of determination between the real total expression
    values and the imputed GReX, retrived from summary(model)$r.squared
-
-   correctedP: The p value after the benjamini-hochberg correction for
-   multiple testing, retrived using p.adjust(pvalues, method="BH")
 }
 \description{
 Fit a linear model and compute ANOVA p value
 }
 \examples{
 if (interactive()) {
-trainingTbaPaths <- system.file("extdata","training.tba.toydata.rds",
-package="AffiXcan")
-
 data(exprMatrix)
-data(regionAssoc)
 data(trainingCovariates)
+data(regionAssoc)
 
+tbaPaths <- system.file("extdata","training.tba.toydata.rds",
+package="AffiXcan")
+regionsCount <- overlookRegions(tbaPaths)
 assay <- "values"
 
-training <- affiXcanTrain(exprMatrix=exprMatrix, assay=assay,
-tbaPaths=trainingTbaPaths, regionAssoc=regionAssoc, cov=trainingCovariates,
-varExplained=80, scale=TRUE)
+sampleNames <- colnames(exprMatrix)
+nSamples <- length(sampleNames)
+sampGroups <- subsetKFold(k=5, n=nSamples)
+for (i in seq(length(sampGroups))) {
+     sampGroups[[i]] <- colnames(exprMatrix)[sampGroups[[i]]]
+}
 
-pca <- training$pca 
+testingSamples <- sampGroups[[1]]
+trainingSamples <- sampleNames[!sampleNames \%in\% testingSamples]
+
+pca <- affiXcanPca(tbaPaths=tbaPaths, varExplained=80, scale=TRUE,
+regionsCount=regionsCount, trainingSamples=trainingSamples)
 
 bs <- affiXcanBs(exprMatrix=exprMatrix, assay=assay, regionAssoc=regionAssoc,
-pca=pca, cov=trainingCovariates)
+pca=pca, cov=trainingCovariates, trainingSamples=trainingSamples)
 }
 }

@@ -22,9 +22,7 @@ computeExpr(bs, pcs)
 \item{pcs}{A list, which is the returning object of affiXcanPcs()}
 }
 \value{
-A summarizedExperiment object; 
-SummarizedExperiment::assays(returningObject)$GReX is a matrix containing the
-imputed GReX values
+A vector of imputed GReX values
 }
 \description{
 Compute the imputed GReX for a certain gene on a set of individuals
@@ -50,7 +48,8 @@ package="AffiXcan")
 pcs <- affiXcanPcs(tbaPaths=testingTbaPaths, affiXcanTraining=training,
 scale=TRUE)
 
-bs <- training$bs
+region <- "ENSG00000256377.1"
+bs <- training$bs[[region]]
 
 exprmatrix <- computeExpr(bs=bs, pcs=pcs)
 }
