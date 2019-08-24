@@ -4,7 +4,7 @@
 \alias{computeBs}
 \title{Fit a linear model to impute a GReX for a certain gene}
 \usage{
-computeBs(assocRegions, pca, expr, covariates)
+computeBs(assocRegions, pca, expr, covariates = NULL)
 }
 \arguments{
 \item{assocRegions}{A data.frame with the associations between regulatory
@@ -16,8 +16,9 @@ regions and one expressed gene, and with colnames = c("REGULATORY_REGION",
 \item{expr}{A matrix containing the real total expression values, where the
 columns are genes and the rows are individual IIDs}
 
-\item{covariates}{A data.frame with covariates values for the population
-structure where the columns are the PCs and the rows are the individual IIDs}
+\item{covariates}{Optrional; a data.frame with covariates values for the
+population structure where the columns are the PCs and the rows are the
+individual IIDs; default is NULL}
 }
 \value{
 A list containing three objects:
@@ -28,6 +29,8 @@ A list containing three objects:
 
    pval: The uncorrected anova pvalue of the model, retrieved from
    anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+   If cov==NULL, i.e. no covariates for the population structure have
+   been provided, pval will be NA
 
    r.sq: The coefficient of determination between the real total expression
    values and the imputed GReX, retrived from summary(model)$r.squared

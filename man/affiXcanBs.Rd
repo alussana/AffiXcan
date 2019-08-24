@@ -4,8 +4,8 @@
 \alias{affiXcanBs}
 \title{Fit a linear model and compute ANOVA p value}
 \usage{
-affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov, BPPARAM = bpparam(),
-  trainingSamples)
+affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov = NULL,
+  BPPARAM = bpparam(), trainingSamples)
 }
 \arguments{
 \item{exprMatrix}{A SummarizedExperiment object containing expression data}
@@ -19,7 +19,9 @@ regions and expressed genes, and with colnames = c("REGULATORY_REGION",
 
 \item{pca}{A list, which is the returningObject$pca from affiXcanPca()}
 
-\item{cov}{A data.frame with covariates values for the population structure}
+\item{cov}{Optional; a data.frame with covariates values for the population
+structure where the columns are the PCs and the rows are the individual IDs;
+default is NULL}
 
 \item{BPPARAM}{A BiocParallelParam object. Default is bpparam(). For
 details on BiocParallelParam virtual base class see 
@@ -40,6 +42,8 @@ Each of these lists contain three objects:
 
    pval: The uncorrected anova pvalue of the model, retrieved from
    anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+   If cov==NULL, i.e. no covariates for the population structure have
+   been provided, pval will be NA
 
    r.sq: The coefficient of determination between the real total expression
    values and the imputed GReX, retrived from summary(model)$r.squared

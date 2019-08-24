@@ -4,7 +4,7 @@
 \alias{affiXcanTrain}
 \title{Train the model needed to impute a GReX for each gene}
 \usage{
-affiXcanTrain(exprMatrix, assay, tbaPaths, regionAssoc, cov,
+affiXcanTrain(exprMatrix, assay, tbaPaths, regionAssoc, cov = NULL,
   varExplained = 80, scale = TRUE, BPPARAM = bpparam(), kfold = 1)
 }
 \arguments{
@@ -20,8 +20,9 @@ MultiAssayExperiment RDS files containing the tba values}
 regions and expressed genes and with colnames = c("REGULATORY_REGION",
 "EXPRESSED_REGION")}
 
-\item{cov}{A data.frame with covariates values for the population structure
-where the columns are the PCs and the rows are the individual IIDs}
+\item{cov}{Optional. A data.frame with covariates values for the population 
+structure where the columns are the PCs and the rows are the individual IIDs
+Default is NULL}
 
 \item{varExplained}{An integer between 0 and 100; varExplained=80 means that
 the principal components selected to fit the models must explain at least
@@ -60,22 +61,18 @@ If kfold<2: a list containing three objects: pca, bs, regionsCount
      bs: A list containing lists named as the REGULATORY_REGIONS found in the
      param regionAssoc that have a correspondent colname in the experiments
      stored in MultiAssayExperiment objects listed in the param tbaPaths.
-     Each of the lists in bs contains four objects:
+     Each of the lists in bs contains three objects:
 
          coefficients: The coefficients of the principal components used in the
          model, completely similar to the "coefficients" from the results of lm()
 
          pval: The uncorrected anova pvalue of the model, retrieved from
          anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+         If cov==NULL, i.e. no covariates for the population structure have
+         been provided, pval will be NA
 
          r.sq: The coefficient of determination between the real total expression
          values and the imputed GReX, retrived from summary(model)$r.squared
-
-         correctedP: The p value after the benjamini-hochberg correction for
-         multiple testing, retrived using p.adjust(pvalues, method="BH")
-
-         mean.r.sq: The mean of the R-squared (R^2) values obtained from the
-         k-fold cross-validation
 
      regionsCount: An integer, that is the number of genomic regions taken into
      account during the training phase
