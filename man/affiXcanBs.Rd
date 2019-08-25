@@ -35,18 +35,17 @@ be considered in the training phase, and not used for the cross-validation}
 A list containing lists named as the REGULATORY_REGIONS found in the
 param regionAssoc that have a correspondent name in the param pca.
 Each of these lists contain three objects:
-
-   coefficients: An object containing the coefficients of the principal
-   components used in the model, completely similar to the "coefficients"
-   from the results of lm()
-
-   pval: The uncorrected anova pvalue of the model, retrieved from
-   anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-   If cov==NULL, i.e. no covariates for the population structure have
-   been provided, pval will be NA
-
-   r.sq: The coefficient of determination between the real total expression
-   values and the imputed GReX, retrived from summary(model)$r.squared
+\itemize{
+ \item coefficients: An object containing the coefficients of the principal
+ components used in the model, completely similar to the "coefficients"
+ from the results of lm()
+ \item pval: The uncorrected anova pvalue of the model, retrieved from
+ anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+ If cov==NULL, i.e. no covariates for the population structure have
+ been provided, pval will be NA
+ \itwm r.sq: The coefficient of determination between the real total expression
+ values and the imputed GReX, retrived from summary(model)$r.squared
+}
 }
 \description{
 Fit a linear model and compute ANOVA p value

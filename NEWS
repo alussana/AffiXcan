@@ -1,9 +1,18 @@
+CHANGES IN VERSION 1.3.3
+------------------------
+
+UPDATED DOCUMENTATION
+
+    o Formatting of functions documentation has been improved
+
+    o Important: vignette is still outdated (AffiXcan 1.2.0)
+
 CHANGES IN VERSION 1.3.2
 ------------------------
 
-POPULATION STRUCTURE COVARIATES ARE NOW OPTIONAL
+POPULATION STRUCTURE COVARIATES ARE OPTIONAL
 
-    o Providing population structure covariates is not mandatory to perform
+    o Providing population structure covariates is now not mandatory to perform
       models training
 
     o An ANOVA p-value will be computed for each gene for which a model could
@@ -12,18 +21,19 @@ POPULATION STRUCTURE COVARIATES ARE NOW OPTIONAL
 CHANGES IN VERSION 1.3.1
 ------------------------
 
-NEW METHOD TO ASSESS THE SIGNIFICANCE OF GREX PREDICTION
+K-FOLD CROSS-VALIDATION IS SUPPORTED
 
     o ANOVA p-value < 0.05 is not used anymore; instead:
     
-    o During the training phase a k-fold cross-validation on the training
-      dataset now performed; k can be defined by the user or be the default (5)
+    o A k-fold cross-validation on the training dataset may be performed;
+      k can be defined by the user
     
-    o R-squared (R^2) between predicted GReX and real expression values are
-      computed
+    o Pearson correlation coefficients (R) and determination coefficients (R^2)
+      between predicted GReX and real expression values of genes are computed
     
-    o GReX of genes for which the mean of the R^2 is above 0.01 are considered
-      non-randomly predicted, according to the new benchmarking standards [ref] 
+    o In literature, GReX of genes for which the mean of the R^2 is above 0.01
+      are considered non-randomly predicted, according to the new benchmarking
+      standards [ref] 
 
 
 CHANGES IN VERSION 1.1.3

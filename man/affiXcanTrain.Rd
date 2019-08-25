@@ -39,43 +39,44 @@ browseVignettes("BiocParallel")}
 training dataset. Default is 1. This argument controls the behavior of the
 function in the following way:
      
-     kfold<2  : train the models on the whole dataset, not performing the
-                cross-validation
-     kfold>=2 : perform the k-fold cross-validation}
+\itemize{
+ \item kfold<2: train the models on the whole dataset, not performing the
+  cross-validation
+ \item kfold>=2: perform the k-fold cross-validation
+}}
 }
 \value{
 The output depends on the parameter kfold
 
 If kfold<2: a list containing three objects: pca, bs, regionsCount
-
-     pca: A list containing lists named as the MultiAssayExperiment::experiments()
-     found in the MultiAssayExperiment objects listed in the param tbaPaths. Each
-     of these lists contain two objects:
-
-         eigenvectors: A matrix containing eigenvectors for those principal
-         components selected according to the param varExplained
-
-         pcs: A matrix containing the principal components values selected
-         according to the param varExplained
-
-     bs: A list containing lists named as the REGULATORY_REGIONS found in the
-     param regionAssoc that have a correspondent colname in the experiments
-     stored in MultiAssayExperiment objects listed in the param tbaPaths.
-     Each of the lists in bs contains three objects:
-
-         coefficients: The coefficients of the principal components used in the
-         model, completely similar to the "coefficients" from the results of lm()
-
-         pval: The uncorrected anova pvalue of the model, retrieved from
-         anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-         If cov==NULL, i.e. no covariates for the population structure have
-         been provided, pval will be NA
-
-         r.sq: The coefficient of determination between the real total expression
-         values and the imputed GReX, retrived from summary(model)$r.squared
-
-     regionsCount: An integer, that is the number of genomic regions taken into
-     account during the training phase
+\itemize{
+ \item pca: A list containing lists named as the
+ MultiAssayExperiment::experiments() found in the MultiAssayExperiment
+ objects listed in the param tbaPaths. Each of these lists contain two
+ objects:
+ \itemize{
+     \item eigenvectors: A matrix containing eigenvectors for those principal
+     components selected according to the param varExplained
+     \item pcs: A matrix containing the principal components values selected
+     according to the param varExplained
+ }
+ \item bs: A list containing lists named as the REGULATORY_REGIONS found in
+ the param regionAssoc that have a correspondent colname in the experiments
+ stored in MultiAssayExperiment objects listed in the param tbaPaths.
+ Each of the lists in bs contains three objects:
+ \itemize{
+     \item coefficients: The coefficients of the principal components used in the
+     model, completely similar to the "coefficients" from the results of lm()
+     \item pval: The uncorrected anova pvalue of the model, retrieved from
+     anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+     If cov==NULL, i.e. no covariates for the population structure have
+     been provided, pval will be NA
+     \item r.sq: The coefficient of determination between the real total expression
+     values and the imputed GReX, retrived from summary(model)$r.squared
+ }
+ \item regionsCount: An integer, that is the number of genomic regions taken into
+ account during the training phase
+}
 
 If kfold>=2: a list containing k-fold objects, named from 1 to kfold and
 corresponding to the different cross-validations [i]; each one of these
@@ -83,14 +84,14 @@ objects is a list containing lists named as the expressed gene IDs [y] (i.e.
 the rownames() of the object in SummarizedExperiment::assays(exprMatrix)
 containing the expression values), for which a GReX could be imputed. Each of
 these inner lists contain two objects:
-     
-     pearson: the pearson's correlation coefficient (R) between the real
-     expression values and the imputed GReX for the cross-validation i on
-     the expressed gene y, computed with cor()
-
-     rSquared: the coefficient of determination (R^2) between the real
-     expression values and the imputed GReX for the cross-validation i on
-     the expressed gene y, computed as pearson^2
+\itemize{     
+ \item pearson: the pearson's correlation coefficient (R) between the real
+ expression values and the imputed GReX for the cross-validation i on
+ the expressed gene y, computed with cor()
+ \item rSquared: the coefficient of determination (R^2) between the real
+ expression values and the imputed GReX for the cross-validation i on
+ the expressed gene y, computed as pearson^2
+}
 }
 \description{
 Train the model needed to impute a GReX for each gene

@@ -23,42 +23,43 @@
 #' training dataset. Default is 1. This argument controls the behavior of the
 #' function in the following way:
 #'      
-#'      kfold<2  : train the models on the whole dataset, not performing the
-#'                 cross-validation
-#'      kfold>=2 : perform the k-fold cross-validation
+#' \itemize{
+#'  \item kfold<2: train the models on the whole dataset, not performing the
+#'   cross-validation
+#'  \item kfold>=2: perform the k-fold cross-validation
+#' }
 #'
 #' @return The output depends on the parameter kfold
 #' 
 #' If kfold<2: a list containing three objects: pca, bs, regionsCount
-#'
-#'      pca: A list containing lists named as the MultiAssayExperiment::experiments()
-#'      found in the MultiAssayExperiment objects listed in the param tbaPaths. Each
-#'      of these lists contain two objects:
-#'
-#'          eigenvectors: A matrix containing eigenvectors for those principal
-#'          components selected according to the param varExplained
-#'
-#'          pcs: A matrix containing the principal components values selected
-#'          according to the param varExplained
-#'
-#'      bs: A list containing lists named as the REGULATORY_REGIONS found in the
-#'      param regionAssoc that have a correspondent colname in the experiments
-#'      stored in MultiAssayExperiment objects listed in the param tbaPaths.
-#'      Each of the lists in bs contains three objects:
-#'
-#'          coefficients: The coefficients of the principal components used in the
-#'          model, completely similar to the "coefficients" from the results of lm()
-#'
-#'          pval: The uncorrected anova pvalue of the model, retrieved from
-#'          anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-#'          If cov==NULL, i.e. no covariates for the population structure have
-#'          been provided, pval will be NA
-#'
-#'          r.sq: The coefficient of determination between the real total expression
-#'          values and the imputed GReX, retrived from summary(model)$r.squared
-#'
-#'      regionsCount: An integer, that is the number of genomic regions taken into
-#'      account during the training phase
+#' \itemize{
+#'  \item pca: A list containing lists named as the
+#'  MultiAssayExperiment::experiments() found in the MultiAssayExperiment
+#'  objects listed in the param tbaPaths. Each of these lists contain two
+#'  objects:
+#'  \itemize{
+#'      \item eigenvectors: A matrix containing eigenvectors for those principal
+#'      components selected according to the param varExplained
+#'      \item pcs: A matrix containing the principal components values selected
+#'      according to the param varExplained
+#'  }
+#'  \item bs: A list containing lists named as the REGULATORY_REGIONS found in
+#'  the param regionAssoc that have a correspondent colname in the experiments
+#'  stored in MultiAssayExperiment objects listed in the param tbaPaths.
+#'  Each of the lists in bs contains three objects:
+#'  \itemize{
+#'      \item coefficients: The coefficients of the principal components used in the
+#'      model, completely similar to the "coefficients" from the results of lm()
+#'      \item pval: The uncorrected anova pvalue of the model, retrieved from
+#'      anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+#'      If cov==NULL, i.e. no covariates for the population structure have
+#'      been provided, pval will be NA
+#'      \item r.sq: The coefficient of determination between the real total expression
+#'      values and the imputed GReX, retrived from summary(model)$r.squared
+#'  }
+#'  \item regionsCount: An integer, that is the number of genomic regions taken into
+#'  account during the training phase
+#' }
 #'
 #' If kfold>=2: a list containing k-fold objects, named from 1 to kfold and
 #' corresponding to the different cross-validations [i]; each one of these
@@ -66,14 +67,14 @@
 #' the rownames() of the object in SummarizedExperiment::assays(exprMatrix)
 #' containing the expression values), for which a GReX could be imputed. Each of
 #' these inner lists contain two objects:
-#'      
-#'      pearson: the pearson's correlation coefficient (R) between the real
-#'      expression values and the imputed GReX for the cross-validation i on
-#'      the expressed gene y, computed with cor()
-#'
-#'      rSquared: the coefficient of determination (R^2) between the real
-#'      expression values and the imputed GReX for the cross-validation i on
-#'      the expressed gene y, computed as pearson^2
+#' \itemize{     
+#'  \item pearson: the pearson's correlation coefficient (R) between the real
+#'  expression values and the imputed GReX for the cross-validation i on
+#'  the expressed gene y, computed with cor()
+#'  \item rSquared: the coefficient of determination (R^2) between the real
+#'  expression values and the imputed GReX for the cross-validation i on
+#'  the expressed gene y, computed as pearson^2
+#' }
 #' @import MultiAssayExperiment SummarizedExperiment BiocParallel crayon
 #' @export
 #'
@@ -117,7 +118,7 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov=NULL,
         }
 
         cat(bold(cyan("\t-->")),
-            green("Performing Principal Component Analysis\n"))
+            green("Performing Principal Components Analysis\n"))
         pca <- affiXcanPca(tbaPaths, varExplained, scale, regionsCount,
                            BPPARAM, trainingSamples)
         cat(bold(cyan("\t-->")), green("Training Coefficients\n"))
@@ -152,8 +153,8 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov=NULL,
 #' numbers are to be splitted
 #' @param n An integer. Defines the interval 1..n 
 #'
-#' @return sampGroups: a list of lists; the first natural n numbers equally
-#' distributed across k lists
+#' @return A list of lists; the first natural n numbers equally distributed 
+#' across k lists
 #'
 #' @export
 #'
@@ -187,12 +188,12 @@ subsetKFold <- function(k, n) {
 #' @return pca: A list containing lists named as the 
 #' MultiAssayExperiment::experiments() found in the MultiAssayExperiment objects
 #' listed in the param tbaPaths. Each of these lists contain two objects:
-#'
-#'    eigenvectors: A matrix containing eigenvectors for those principal
-#'    components selected according to the param varExplained
-#'
-#'    pcs: A matrix containing the principal components values selected
-#'    according to the param varExplained
+#' \itemize{
+#'  \item eigenvectors: A matrix containing eigenvectors for those principal
+#'  components selected according to the param varExplained
+#'  \item pcs: A matrix containing the principal components values selected
+#'  according to the param varExplained
+#' }
 #' @import MultiAssayExperiment BiocParallel 
 #' @export
 #'
@@ -257,12 +258,12 @@ affiXcanPca <- function(tbaPaths, varExplained=80, scale=TRUE, regionsCount,
 #' not scaled before performing PCA; default is TRUE
 #'
 #' @return A list containing two objects:
-#' 
-#'     eigenvectors: a matrix containing eigenvectors for those principal
-#'     components selected according to the param varExplained
-#' 
-#'     pcs: a matrix containing the principal components values selected
-#'     according to the param varExplained
+#' \itemize{ 
+#'  \item eigenvectors: a matrix containing eigenvectors for those principal
+#'  components selected according to the param varExplained
+#'  \item pcs: a matrix containing the principal components values selected
+#'  according to the param varExplained
+#' }
 #' @export
 #'
 #' @examples
@@ -354,19 +355,17 @@ computePca <- function(data, varExplained=80, scale=TRUE) {
 #' @return A list containing lists named as the REGULATORY_REGIONS found in the
 #' param regionAssoc that have a correspondent name in the param pca.
 #' Each of these lists contain three objects:
-#'
-#'    coefficients: An object containing the coefficients of the principal
-#'    components used in the model, completely similar to the "coefficients"
-#'    from the results of lm()
-#'
-#'    pval: The uncorrected anova pvalue of the model, retrieved from
-#'    anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-#'    If cov==NULL, i.e. no covariates for the population structure have
-#'    been provided, pval will be NA
-#'
-#'    r.sq: The coefficient of determination between the real total expression
-#'    values and the imputed GReX, retrived from summary(model)$r.squared
-#'
+#' \itemize{
+#'  \item coefficients: An object containing the coefficients of the principal
+#'  components used in the model, completely similar to the "coefficients"
+#'  from the results of lm()
+#'  \item pval: The uncorrected anova pvalue of the model, retrieved from
+#'  anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+#'  If cov==NULL, i.e. no covariates for the population structure have
+#'  been provided, pval will be NA
+#'  \itwm r.sq: The coefficient of determination between the real total expression
+#'  values and the imputed GReX, retrived from summary(model)$r.squared
+#' }
 #' @import SummarizedExperiment BiocParallel
 #' @export
 #'
@@ -477,18 +476,17 @@ assoc2list <- function(gene, regionAssoc) {
 #' individual IIDs; default is NULL
 #'
 #' @return A list containing three objects:
-#'
-#'    coefficients: An object containing the coefficients of the principal
-#'    components used in the model, completely similar to the "coefficients"
-#'    from the results of lm()
-#'
-#'    pval: The uncorrected anova pvalue of the model, retrieved from
-#'    anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-#'    If cov==NULL, i.e. no covariates for the population structure have
-#'    been provided, pval will be NA
-#'
-#'    r.sq: The coefficient of determination between the real total expression
-#'    values and the imputed GReX, retrived from summary(model)$r.squared
+#' \itemize{
+#'  \item coefficients: An object containing the coefficients of the principal
+#'  components used in the model, completely similar to the "coefficients"
+#'  from the results of lm()
+#'  \item pval: The uncorrected anova pvalue of the model, retrieved from
+#'  anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+#'  If cov==NULL, i.e. no covariates for the population structure have
+#'  been provided, pval will be NA
+#'  \item r.sq: The coefficient of determination between the real total expression
+#'  values and the imputed GReX, retrived from summary(model)$r.squared
+#' }
 #' @export
 #'
 #' @examples
@@ -827,18 +825,17 @@ affiXcanGReX <- function(affiXcanTraining, pcs, BPPARAM=bpparam()) {
 #' Compute the imputed GReX for a certain gene on a set of individuals
 #'
 #' @param bs A list containing three objects:
-#'
-#'    coefficients: An object containing the coefficients of the principal
-#'    components used in the model, completely similar to the "coefficients"
-#'    object from the results of lm()
-#'
-#'    pval: The uncorrected anova pvalue of the model, retrieved from
-#'    anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-#'    If cov==NULL, i.e. no covariates for the population structure have
-#'    been provided, pval will be NA
-#'
-#'    r.sq: The coefficient of determination between the real total expression
-#'    values and the imputed GReX, retrived from summary(model)$r.squared
+#' \itemize{
+#'  \item coefficients: An object containing the coefficients of the principal
+#'  components used in the model, completely similar to the "coefficients"
+#'  object from the results of lm()
+#'  \item pval: The uncorrected anova pvalue of the model, retrieved from
+#'  anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+#'  If cov==NULL, i.e. no covariates for the population structure have
+#'  been provided, pval will be NA
+#'  \item r.sq: The coefficient of determination between the real total expression
+#'  values and the imputed GReX, retrived from summary(model)$r.squared
+#' }
 #' @param pcs A list, which is the returning object of affiXcanPcs()
 #'
 #' @return A vector of imputed GReX values
@@ -935,14 +932,14 @@ computeExpr <- function(bs, pcs) {
 #' @return A list of lists; inner lists are named after the rows for which the
 #' correlation between realExpr and imputedExpr have been computed; inner
 #' lists contain two objects:
-#'      
-#'      pearson: the pearson's correlation coefficient (R) between the real
-#'      expression values and the imputed GReX for the cross-validation i on
-#'      the expressed gene y, computed with cor()
-#'
-#'      rSquared: the coefficient of determination (R^2) between the real
-#'      expression values and the imputed GReX for the cross-validation i on
-#'      the expressed gene y, computed as pearson^2
+#' \itemize{     
+#'  \item pearson: the pearson's correlation coefficient (R) between the real
+#'  expression values and the imputed GReX for the cross-validation i on
+#'  the expressed gene y, computed with cor()
+#'  \item rSquared: the coefficient of determination (R^2) between the real
+#'  expression values and the imputed GReX for the cross-validation i on
+#'  the expressed gene y, computed as pearson^2
+#' }
 #' @import SummarizedExperiment BiocParallel
 #' @export
 #'
@@ -996,14 +993,14 @@ computeRSquared <- function(realExpr, imputedExpr, assay,
 #' @param imputedExpr The returning object of affiXcanImpute()
 #'
 #' @return A list of two objects:
-#'      
-#'      pearson: the pearson's correlation coefficient (R) between the real
-#'      expression values and the imputed GReX for the cross-validation i on
-#'      the expressed gene y, computed with cor()
-#'
-#'      rSquared: the coefficient of determination (R^2) between the real
-#'      expression values and the imputed GReX for the cross-validation i on
-#'      the expressed gene y, computed as pearson^2
+#' \itemize{     
+#'  \item pearson: the pearson's correlation coefficient (R) between the real
+#'  expression values and the imputed GReX for the cross-validation i on
+#'  the expressed gene y, computed with cor()
+#'  \item rSquared: the coefficient of determination (R^2) between the real
+#'  expression values and the imputed GReX for the cross-validation i on
+#'  the expressed gene y, computed as pearson^2
+#' }
 #' @export
 #'
 #' @examples
@@ -1086,7 +1083,7 @@ affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale=TRUE,
     }
     cat(bold(green("\nAffiXcan")),": ",
         cyan("Imputing Genetically Regulated Expression (GReX)\n"), sep="")
-    cat(bold(cyan("\t--> ")), green("Computing principal components\n"), sep="")
+    cat(bold(cyan("\t--> ")), green("Computing Principal Components\n"), sep="")
     pcs <- affiXcanPcs(tbaPaths, affiXcanTraining, scale, BPPARAM)
     cat(bold(cyan("\t--> ")), green("Imputing GReX values\n"), sep="")
     exprmatrix <- affiXcanGReX(affiXcanTraining, pcs, BPPARAM)

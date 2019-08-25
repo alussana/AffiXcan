@@ -13,8 +13,8 @@ numbers are to be splitted}
 \item{n}{An integer. Defines the interval 1..n}
 }
 \value{
-sampGroups: a list of lists; the first natural n numbers equally
-distributed across k lists
+A list of lists; the first natural n numbers equally distributed 
+across k lists
 }
 \description{
 Split the numbers from 1 to n in k equally-sized lists

@@ -8,18 +8,17 @@ computeExpr(bs, pcs)
 }
 \arguments{
 \item{bs}{A list containing three objects:
-
-   coefficients: An object containing the coefficients of the principal
-   components used in the model, completely similar to the "coefficients"
-   object from the results of lm()
-
-   pval: The uncorrected anova pvalue of the model, retrieved from
-   anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-   If cov==NULL, i.e. no covariates for the population structure have
-   been provided, pval will be NA
-
-   r.sq: The coefficient of determination between the real total expression
-   values and the imputed GReX, retrived from summary(model)$r.squared}
+\itemize{
+ \item coefficients: An object containing the coefficients of the principal
+ components used in the model, completely similar to the "coefficients"
+ object from the results of lm()
+ \item pval: The uncorrected anova pvalue of the model, retrieved from
+ anova(model, modelReduced, test="F")$'Pr(>F)'[2]
+ If cov==NULL, i.e. no covariates for the population structure have
+ been provided, pval will be NA
+ \item r.sq: The coefficient of determination between the real total expression
+ values and the imputed GReX, retrived from summary(model)$r.squared
+}}
 
 \item{pcs}{A list, which is the returning object of affiXcanPcs()}
 }

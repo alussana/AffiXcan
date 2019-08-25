@@ -34,12 +34,12 @@ be considered in the training phase, and not used for the cross-validation}
 pca: A list containing lists named as the 
 MultiAssayExperiment::experiments() found in the MultiAssayExperiment objects
 listed in the param tbaPaths. Each of these lists contain two objects:
-
-   eigenvectors: A matrix containing eigenvectors for those principal
-   components selected according to the param varExplained
-
-   pcs: A matrix containing the principal components values selected
-   according to the param varExplained
+\itemize{
+ \item eigenvectors: A matrix containing eigenvectors for those principal
+ components selected according to the param varExplained
+ \item pcs: A matrix containing the principal components values selected
+ according to the param varExplained
+}
 }
 \description{
 Perform a PCA on each experiment found in MultiAssayExperiment objects

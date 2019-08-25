@@ -19,12 +19,12 @@ not scaled before performing PCA; default is TRUE}
 }
 \value{
 A list containing two objects:
-
-    eigenvectors: a matrix containing eigenvectors for those principal
-    components selected according to the param varExplained
-
-    pcs: a matrix containing the principal components values selected
-    according to the param varExplained
+\itemize{ 
+ \item eigenvectors: a matrix containing eigenvectors for those principal
+ components selected according to the param varExplained
+ \item pcs: a matrix containing the principal components values selected
+ according to the param varExplained
+}
 }
 \description{
 Perform a PCA on a matrix where columns are variables
