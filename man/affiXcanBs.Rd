@@ -43,7 +43,7 @@ Each of these lists contain three objects:
  anova(model, modelReduced, test="F")$'Pr(>F)'[2]
  If cov==NULL, i.e. no covariates for the population structure have
  been provided, pval will be NA
- \itwm r.sq: The coefficient of determination between the real total expression
+ \item r.sq: The coefficient of determination between the real total expression
  values and the imputed GReX, retrived from summary(model)$r.squared
 }
 }
