@@ -50,10 +50,7 @@
 #'  \itemize{
 #'      \item coefficients: The coefficients of the principal components used in the
 #'      model, completely similar to the "coefficients" from the results of lm()
-#'      \item pval: The uncorrected anova pvalue of the model, retrieved from
-#'      anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-#'      If cov==NULL, i.e. no covariates for the population structure have
-#'      been provided, pval will be NA
+#'      \item pval: The uncorrected anova pvalue of the model
 #'      \item r.sq: The coefficient of determination between the real total expression
 #'      values and the imputed GReX, retrived from summary(model)$r.squared
 #'  }
@@ -68,12 +65,14 @@
 #' containing the expression values), for which a GReX could be imputed. Each of
 #' these inner lists contain two objects:
 #' \itemize{     
-#'  \item pearson: the pearson's correlation coefficient (R) between the real
+#'  \item rho: the pearson's correlation coefficient (R) between the real
 #'  expression values and the imputed GReX for the cross-validation i on
 #'  the expressed gene y, computed with cor()
-#'  \item rSquared: the coefficient of determination (R^2) between the real
+#'  \item rho.sq: the coefficient of determination (R^2) between the real
 #'  expression values and the imputed GReX for the cross-validation i on
 #'  the expressed gene y, computed as pearson^2
+#'  \item cor.test.p.val: the p-value of the cor.test() between the real expression values
+#'  and the imputed GReX for the cross-validation i on the expressed gene y
 #' }
 #' @import MultiAssayExperiment SummarizedExperiment BiocParallel crayon
 #' @export
@@ -121,14 +120,14 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov=NULL,
             green("Performing Principal Components Analysis\n"))
         pca <- affiXcanPca(tbaPaths, varExplained, scale, regionsCount,
                            BPPARAM, trainingSamples)
-        cat(bold(cyan("\t-->")), green("Training Coefficients\n"))
+        cat(bold(cyan("\t-->")), green("Training Linear Models\n"))
         bs <- affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov, BPPARAM,
                          trainingSamples)
         affiXcanTraining <- list(pca=pca, bs=bs, regionsCount=regionsCount)
 
         if (kfold > 1) {
             cat(bold(cyan("\t-->")),
-                green("Computing Principal Components On Testing Set\n"))
+                green("Computing Principal Components On Validation Set\n"))
             pcs <- affiXcanPcs(tbaPaths, affiXcanTraining, scale, BPPARAM,
                                testingSamples)
             cat(bold(cyan("\t-->")), green("Imputing GReX Values\n"))
@@ -141,7 +140,7 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov=NULL,
         else {
             trainingOutput <- affiXcanTraining
         }
-        cat(bold(cyan("\tDone!\n")))
+        cat(bold(cyan("\tDone\n")))
     }
     
     return(trainingOutput)
@@ -359,10 +358,7 @@ computePca <- function(data, varExplained=80, scale=TRUE) {
 #'  \item coefficients: An object containing the coefficients of the principal
 #'  components used in the model, completely similar to the "coefficients"
 #'  from the results of lm()
-#'  \item pval: The uncorrected anova pvalue of the model, retrieved from
-#'  anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-#'  If cov==NULL, i.e. no covariates for the population structure have
-#'  been provided, pval will be NA
+#'  \item pval: The uncorrected anova pvalue of the model
 #'  \item r.sq: The coefficient of determination between the real total expression
 #'  values and the imputed GReX, retrived from summary(model)$r.squared
 #' }
@@ -480,10 +476,7 @@ assoc2list <- function(gene, regionAssoc) {
 #'  \item coefficients: An object containing the coefficients of the principal
 #'  components used in the model, completely similar to the "coefficients"
 #'  from the results of lm()
-#'  \item pval: The uncorrected anova pvalue of the model, retrieved from
-#'  anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-#'  If cov==NULL, i.e. no covariates for the population structure have
-#'  been provided, pval will be NA
+#'  \item pval: The uncorrected anova pvalue of the model
 #'  \item r.sq: The coefficient of determination between the real total expression
 #'  values and the imputed GReX, retrived from summary(model)$r.squared
 #' }
@@ -573,7 +566,9 @@ computeBs <- function(assocRegions, pca, expr, covariates=NULL) {
                 a <- anova(model, modelReduced, test="F")
                 pval <- a$'Pr(>F)'[2]
             } else {
-                pval <- NA
+                f <- summary(model)$fstatistic
+                pval <- pf(f[1],f[2],f[3],lower.tail=F)
+                attributes(pval) <- NULL
             }
 
             if (is.null(covariates)==FALSE) {
@@ -829,10 +824,7 @@ affiXcanGReX <- function(affiXcanTraining, pcs, BPPARAM=bpparam()) {
 #'  \item coefficients: An object containing the coefficients of the principal
 #'  components used in the model, completely similar to the "coefficients"
 #'  object from the results of lm()
-#'  \item pval: The uncorrected anova pvalue of the model, retrieved from
-#'  anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-#'  If cov==NULL, i.e. no covariates for the population structure have
-#'  been provided, pval will be NA
+#'  \item pval: The uncorrected anova pvalue of the model
 #'  \item r.sq: The coefficient of determination between the real total expression
 #'  values and the imputed GReX, retrived from summary(model)$r.squared
 #' }
@@ -933,12 +925,14 @@ computeExpr <- function(bs, pcs) {
 #' correlation between realExpr and imputedExpr have been computed; inner
 #' lists contain two objects:
 #' \itemize{     
-#'  \item pearson: the pearson's correlation coefficient (R) between the real
+#'  \item rho: the pearson's correlation coefficient (R) between the real
 #'  expression values and the imputed GReX for the cross-validation i on
 #'  the expressed gene y, computed with cor()
-#'  \item rSquared: the coefficient of determination (R^2) between the real
+#'  \item rho.sq: the coefficient of determination (R^2) between the real
 #'  expression values and the imputed GReX for the cross-validation i on
 #'  the expressed gene y, computed as pearson^2
+#'  \item cor.test.p.val: the p-value of the cor.test() between the real expression values
+#'  and the imputed GReX for the cross-validation i on the expressed gene y
 #' }
 #' @import SummarizedExperiment BiocParallel
 #' @export
@@ -994,12 +988,14 @@ computeRSquared <- function(realExpr, imputedExpr, assay,
 #'
 #' @return A list of two objects:
 #' \itemize{     
-#'  \item pearson: the pearson's correlation coefficient (R) between the real
+#'  \item rho: the pearson's correlation coefficient (R) between the real
 #'  expression values and the imputed GReX for the cross-validation i on
 #'  the expressed gene y, computed with cor()
-#'  \item rSquared: the coefficient of determination (R^2) between the real
+#'  \item rho.sq: the coefficient of determination (R^2) between the real
 #'  expression values and the imputed GReX for the cross-validation i on
 #'  the expressed gene y, computed as pearson^2
+#'  \item cor.test.p.val: the p-value of the cor.test() between the real expression values
+#'  and the imputed GReX for the cross-validation i on the expressed gene y
 #' }
 #' @export
 #'
@@ -1032,8 +1028,9 @@ computeCorrelation <- function(geneName, realExpr, imputedExpr) {
     realExpr <- realExpr[rownames(realExpr)==geneName]
     imputedExpr <- imputedExpr[rownames(imputedExpr)==geneName]
     pearson <- cor(imputedExpr, realExpr)
-    rSquared <- pearson^2
-    correlation <- list("pearson"=pearson, "rSquared"=rSquared)
+    pearson.sq <- pearson^2
+    pvalue <- cor.test(imputedExpr, realExpr)$p.value
+    correlation <- list("rho"=pearson, "rho.sq"=pearson.sq, "cor.test.p.val"=pvalue)
     return(correlation)
 }
 
@@ -1087,6 +1084,6 @@ affiXcanImpute <- function(tbaPaths, affiXcanTraining, scale=TRUE,
     pcs <- affiXcanPcs(tbaPaths, affiXcanTraining, scale, BPPARAM)
     cat(bold(cyan("\t--> ")), green("Imputing GReX values\n"), sep="")
     exprmatrix <- affiXcanGReX(affiXcanTraining, pcs, BPPARAM)
-    cat(bold(cyan("\tDone!\n")))
+    cat(bold(cyan("\tDone\n")))
     return(exprmatrix)
 }

@@ -67,10 +67,7 @@ If kfold<2: a list containing three objects: pca, bs, regionsCount
  \itemize{
      \item coefficients: The coefficients of the principal components used in the
      model, completely similar to the "coefficients" from the results of lm()
-     \item pval: The uncorrected anova pvalue of the model, retrieved from
-     anova(model, modelReduced, test="F")$'Pr(>F)'[2]
-     If cov==NULL, i.e. no covariates for the population structure have
-     been provided, pval will be NA
+     \item pval: The uncorrected anova pvalue of the model
      \item r.sq: The coefficient of determination between the real total expression
      values and the imputed GReX, retrived from summary(model)$r.squared
  }
@@ -85,12 +82,14 @@ the rownames() of the object in SummarizedExperiment::assays(exprMatrix)
 containing the expression values), for which a GReX could be imputed. Each of
 these inner lists contain two objects:
 \itemize{     
- \item pearson: the pearson's correlation coefficient (R) between the real
+ \item rho: the pearson's correlation coefficient (R) between the real
  expression values and the imputed GReX for the cross-validation i on
  the expressed gene y, computed with cor()
- \item rSquared: the coefficient of determination (R^2) between the real
+ \item rho.sq: the coefficient of determination (R^2) between the real
  expression values and the imputed GReX for the cross-validation i on
  the expressed gene y, computed as pearson^2
+ \item cor.test.p.val: the p-value of the cor.test() between the real expression values
+ and the imputed GReX for the cross-validation i on the expressed gene y
 }
 }
 \description{

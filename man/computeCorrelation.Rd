@@ -17,12 +17,14 @@ that identifies the vectors between which R and R^2 have to be computed}
 \value{
 A list of two objects:
 \itemize{     
- \item pearson: the pearson's correlation coefficient (R) between the real
+ \item rho: the pearson's correlation coefficient (R) between the real
  expression values and the imputed GReX for the cross-validation i on
  the expressed gene y, computed with cor()
- \item rSquared: the coefficient of determination (R^2) between the real
+ \item rho.sq: the coefficient of determination (R^2) between the real
  expression values and the imputed GReX for the cross-validation i on
  the expressed gene y, computed as pearson^2
+ \item cor.test.p.val: the p-value of the cor.test() between the real expression values
+ and the imputed GReX for the cross-validation i on the expressed gene y
 }
 }
 \description{
