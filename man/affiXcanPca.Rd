@@ -39,6 +39,8 @@ listed in the param tbaPaths. Each of these lists contain two objects:
  components selected according to the param varExplained
  \item pcs: A matrix containing the principal components values selected
  according to the param varExplained
+ \item eigenvalues: A vector containing eigenvalues for those principal
+ components selected according to the param varExplained
 }
 }
 \description{

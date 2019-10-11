@@ -20,10 +20,12 @@ not scaled before performing PCA; default is TRUE}
 \value{
 A list containing two objects:
 \itemize{ 
- \item eigenvectors: a matrix containing eigenvectors for those principal
+ \item eigenvectors: A matrix containing eigenvectors for those principal
  components selected according to the param varExplained
- \item pcs: a matrix containing the principal components values selected
+ \item pcs: A matrix containing the principal components values selected
  according to the param varExplained
+ \item eigenvalues: A vector containing eigenvalues for those principal
+ components selected according to the param varExplained
 }
 }
 \description{

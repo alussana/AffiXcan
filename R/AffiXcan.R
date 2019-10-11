@@ -42,6 +42,8 @@
 #'      components selected according to the param varExplained
 #'      \item pcs: A matrix containing the principal components values selected
 #'      according to the param varExplained
+#'      \item eigenvalues: A vector containing eigenvalues for those principal
+#'      components selected according to the param varExplained
 #'  }
 #'  \item bs: A list containing lists named as the REGULATORY_REGIONS found in
 #'  the param regionAssoc that have a correspondent colname in the experiments
@@ -192,6 +194,8 @@ subsetKFold <- function(k, n) {
 #'  components selected according to the param varExplained
 #'  \item pcs: A matrix containing the principal components values selected
 #'  according to the param varExplained
+#'  \item eigenvalues: A vector containing eigenvalues for those principal
+#'  components selected according to the param varExplained
 #' }
 #' @import MultiAssayExperiment BiocParallel 
 #' @export
@@ -258,10 +262,12 @@ affiXcanPca <- function(tbaPaths, varExplained=80, scale=TRUE, regionsCount,
 #'
 #' @return A list containing two objects:
 #' \itemize{ 
-#'  \item eigenvectors: a matrix containing eigenvectors for those principal
+#'  \item eigenvectors: A matrix containing eigenvectors for those principal
 #'  components selected according to the param varExplained
-#'  \item pcs: a matrix containing the principal components values selected
+#'  \item pcs: A matrix containing the principal components values selected
 #'  according to the param varExplained
+#'  \item eigenvalues: A vector containing eigenvalues for those principal
+#'  components selected according to the param varExplained
 #' }
 #' @export
 #'
@@ -321,13 +327,18 @@ computePca <- function(data, varExplained=80, scale=TRUE) {
                 wantedEigenvectors[order(rownames(wantedEigenvectors)),]
             wantedEigenvectors <- as.matrix(wantedEigenvectors)
 
-            return(list(eigenvectors=wantedEigenvectors, pcs=wantedPcs))
+            wantedEigenvalues <- eigenvalues[1:nWantedPcs]
+            names(wantedEigenvalues) <- colnames(wantedEigenvectors)
 
+            return(list(eigenvectors=wantedEigenvectors, pcs=wantedPcs,
+                        eigenvalues=wantedEigenvalues))
         },
         error=function(e) {
             wantedEigenvectors <- NA
             wantedPcs <- NA
-            return(list(eigenvectors=wantedEigenvectors, pcs=wantedPcs))
+            wantedEigenvalues <- NA
+            return(list(eigenvectors=wantedEigenvectors, pcs=wantedPcs,
+                        eigenvalues=wantedEigenvalues))
         }
     )
 }

@@ -59,6 +59,8 @@ If kfold<2: a list containing three objects: pca, bs, regionsCount
      components selected according to the param varExplained
      \item pcs: A matrix containing the principal components values selected
      according to the param varExplained
+     \item eigenvalues: A vector containing eigenvalues for those principal
+     components selected according to the param varExplained
  }
  \item bs: A list containing lists named as the REGULATORY_REGIONS found in
  the param regionAssoc that have a correspondent colname in the experiments
