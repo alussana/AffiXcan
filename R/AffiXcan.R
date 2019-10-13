@@ -39,22 +39,24 @@
 #'  objects:
 #'  \itemize{
 #'      \item eigenvectors: A matrix containing eigenvectors for those principal
-#'      components selected according to the param varExplained
-#'      \item pcs: A matrix containing the principal components values selected
-#'      according to the param varExplained
+#'      components of the TBA selected according to the param varExplained
+#'      \item pcs: A matrix containing the principal components values of the 
+#'      TBA selected according to the param varExplained
 #'      \item eigenvalues: A vector containing eigenvalues for those principal
-#'      components selected according to the param varExplained
+#'      components of the TBA selected according to the param varExplained
 #'  }
-#'  \item bs: A list containing lists named as the REGULATORY_REGIONS found in
-#'  the param regionAssoc that have a correspondent colname in the experiments
-#'  stored in MultiAssayExperiment objects listed in the param tbaPaths.
+#'  \item bs: A list containing lists named as the EXPRESSED_REGIONS found in
+#'  the param regionAssoc that have a correspondent rowname in the expression
+#'  values stored SummarizedExperiment::assays(exprMatrix)$assay.
 #'  Each of the lists in bs contains three objects:
 #'  \itemize{
 #'      \item coefficients: The coefficients of the principal components used in the
 #'      model, completely similar to the "coefficients" from the results of lm()
-#'      \item pval: The uncorrected anova pvalue of the model
+#'      \item p.val: The uncorrected anova pvalue of the model
 #'      \item r.sq: The coefficient of determination between the real total expression
 #'      values and the imputed GReX, retrived from summary(model)$r.squared
+#'      \item corrected.p.val: The p-value of the model, corrected for multiple
+#'      testing with benjamini-hochberg procedure
 #'  }
 #'  \item regionsCount: An integer, that is the number of genomic regions taken into
 #'  account during the training phase
@@ -343,7 +345,7 @@ computePca <- function(data, varExplained=80, scale=TRUE) {
     )
 }
 
-#' Fit a linear model and compute ANOVA p value
+#' Fit linear models and compute ANOVA p-values
 #'
 #' @param exprMatrix A SummarizedExperiment object containing expression data
 #' @param assay A string with the name of the object in
@@ -362,16 +364,18 @@ computePca <- function(data, varExplained=80, scale=TRUE) {
 #' of MultiAssayExperiment objects from tbaPaths) of the samples that have to
 #' be considered in the training phase, and not used for the cross-validation
 #'
-#' @return A list containing lists named as the REGULATORY_REGIONS found in the
-#' param regionAssoc that have a correspondent name in the param pca.
+#' @return A list containing lists named as the EXPRESSED_REGIONS found in the
+#' param regionAssoc.
 #' Each of these lists contain three objects:
 #' \itemize{
 #'  \item coefficients: An object containing the coefficients of the principal
 #'  components used in the model, completely similar to the "coefficients"
 #'  from the results of lm()
-#'  \item pval: The uncorrected anova pvalue of the model
+#'  \item p.val: The uncorrected anova p-value of the model
 #'  \item r.sq: The coefficient of determination between the real total expression
 #'  values and the imputed GReX, retrived from summary(model)$r.squared
+#'  \item corrected.p.val: The p-value of the model, corrected for multiple
+#'  testing with benjamini-hochberg procedure 
 #' }
 #' @import SummarizedExperiment BiocParallel
 #' @export
@@ -429,20 +433,18 @@ affiXcanBs <- function(exprMatrix, assay, regionAssoc, pca, cov=NULL,
         }
     }
 
-    ## ANOVA is not performed anymore (changes in version 1.3.1)
-
     ## Compute multitest pvalue correction (benjamini-hochberg)
-    #pvalues <- vector("numeric", length=length(bs))
-    #
-    #for(i in seq(1:length(pvalues))) {
-    #    pvalues[[i]] <- bs[[i]]$pval
-    #}
-    #
-    #multi.test.pvals <- p.adjust(pvalues, method="BH")
-    #
-    #for(i in seq(1:length(bs))) {
-    #    bs[[i]]$correctedP <- multi.test.pvals[[i]]
-    #}
+    pvalues <- vector("numeric", length=length(bs))
+    
+    for(i in seq(1:length(pvalues))) {
+        pvalues[[i]] <- bs[[i]]$p.val
+    }
+    
+    multi.test.pvals <- p.adjust(pvalues, method="BH")
+    
+    for(i in seq(1:length(bs))) {
+        bs[[i]]$corrected.p.val <- multi.test.pvals[[i]]
+    }
     
     return(bs)
 }
@@ -487,7 +489,7 @@ assoc2list <- function(gene, regionAssoc) {
 #'  \item coefficients: An object containing the coefficients of the principal
 #'  components used in the model, completely similar to the "coefficients"
 #'  from the results of lm()
-#'  \item pval: The uncorrected anova pvalue of the model
+#'  \item p.val: The uncorrected anova pvalue of the model
 #'  \item r.sq: The coefficient of determination between the real total expression
 #'  values and the imputed GReX, retrived from summary(model)$r.squared
 #' }
@@ -590,7 +592,7 @@ computeBs <- function(assocRegions, pca, expr, covariates=NULL) {
             }
 
             r.sq <- summary(model)$r.squared
-            results <- list(coefficients=betas, pval=pval, r.sq=r.sq)
+            results <- list(coefficients=betas, p.val=pval, r.sq=r.sq)
             return(results)
         },
         error = function(e) {
@@ -598,7 +600,7 @@ computeBs <- function(assocRegions, pca, expr, covariates=NULL) {
             betas <- NA
             pval <- NA
             r.sq <- NA
-            results <- list(coefficients=betas, pval=pval, r.sq=r.sq)
+            results <- list(coefficients=betas, p.val=pval, r.sq=r.sq)
             return(results)
         }
     )
@@ -835,7 +837,7 @@ affiXcanGReX <- function(affiXcanTraining, pcs, BPPARAM=bpparam()) {
 #'  \item coefficients: An object containing the coefficients of the principal
 #'  components used in the model, completely similar to the "coefficients"
 #'  object from the results of lm()
-#'  \item pval: The uncorrected anova pvalue of the model
+#'  \item p.val: The uncorrected anova pvalue of the model
 #'  \item r.sq: The coefficient of determination between the real total expression
 #'  values and the imputed GReX, retrived from summary(model)$r.squared
 #' }

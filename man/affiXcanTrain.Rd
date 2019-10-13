@@ -56,11 +56,11 @@ If kfold<2: a list containing three objects: pca, bs, regionsCount
  objects:
  \itemize{
      \item eigenvectors: A matrix containing eigenvectors for those principal
-     components selected according to the param varExplained
-     \item pcs: A matrix containing the principal components values selected
-     according to the param varExplained
+     components of the TBA selected according to the param varExplained
+     \item pcs: A matrix containing the principal components values of the 
+     TBA selected according to the param varExplained
      \item eigenvalues: A vector containing eigenvalues for those principal
-     components selected according to the param varExplained
+     components of the TBA selected according to the param varExplained
  }
  \item bs: A list containing lists named as the REGULATORY_REGIONS found in
  the param regionAssoc that have a correspondent colname in the experiments
@@ -69,7 +69,7 @@ If kfold<2: a list containing three objects: pca, bs, regionsCount
  \itemize{
      \item coefficients: The coefficients of the principal components used in the
      model, completely similar to the "coefficients" from the results of lm()
-     \item pval: The uncorrected anova pvalue of the model
+     \item p.val: The uncorrected anova pvalue of the model
      \item r.sq: The coefficient of determination between the real total expression
      values and the imputed GReX, retrived from summary(model)$r.squared
  }

@@ -26,7 +26,7 @@ A list containing three objects:
  \item coefficients: An object containing the coefficients of the principal
  components used in the model, completely similar to the "coefficients"
  from the results of lm()
- \item pval: The uncorrected anova pvalue of the model
+ \item p.val: The uncorrected anova pvalue of the model
  \item r.sq: The coefficient of determination between the real total expression
  values and the imputed GReX, retrived from summary(model)$r.squared
 }
