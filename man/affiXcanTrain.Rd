@@ -62,9 +62,9 @@ If kfold<2: a list containing three objects: pca, bs, regionsCount
      \item eigenvalues: A vector containing eigenvalues for those principal
      components of the TBA selected according to the param varExplained
  }
- \item bs: A list containing lists named as the REGULATORY_REGIONS found in
- the param regionAssoc that have a correspondent colname in the experiments
- stored in MultiAssayExperiment objects listed in the param tbaPaths.
+ \item bs: A list containing lists named as the EXPRESSED_REGIONS found in
+ the param regionAssoc that have a correspondent rowname in the expression
+ values stored SummarizedExperiment::assays(exprMatrix)$assay.
  Each of the lists in bs contains three objects:
  \itemize{
      \item coefficients: The coefficients of the principal components used in the
@@ -72,6 +72,8 @@ If kfold<2: a list containing three objects: pca, bs, regionsCount
      \item p.val: The uncorrected anova pvalue of the model
      \item r.sq: The coefficient of determination between the real total expression
      values and the imputed GReX, retrived from summary(model)$r.squared
+     \item corrected.p.val: The p-value of the model, corrected for multiple
+     testing with benjamini-hochberg procedure
  }
  \item regionsCount: An integer, that is the number of genomic regions taken into
  account during the training phase
@@ -92,6 +94,11 @@ these inner lists contain two objects:
  the expressed gene y, computed as pearson^2
  \item cor.test.p.val: the p-value of the cor.test() between the real expression values
  and the imputed GReX for the cross-validation i on the expressed gene y
+ \item model.p.val: The uncorrected anova pvalue of the model
+ \item model.corrected.p.val: The p-value of the model, corrected for
+ multiple testing with benjamini-hochberg procedure
+ \item model.r.sq: the model's coefficient of determination (R^2) on the
+ training data
 }
 }
 \description{

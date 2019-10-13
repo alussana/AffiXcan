@@ -2,7 +2,7 @@
 % Please edit documentation in R/AffiXcan.R
 \name{affiXcanBs}
 \alias{affiXcanBs}
-\title{Fit a linear model and compute ANOVA p value}
+\title{Fit linear models and compute ANOVA p-values}
 \usage{
 affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov = NULL,
   BPPARAM = bpparam(), trainingSamples)
@@ -32,20 +32,22 @@ of MultiAssayExperiment objects from tbaPaths) of the samples that have to
 be considered in the training phase, and not used for the cross-validation}
 }
 \value{
-A list containing lists named as the REGULATORY_REGIONS found in the
-param regionAssoc that have a correspondent name in the param pca.
+A list containing lists named as the EXPRESSED_REGIONS found in the
+param regionAssoc.
 Each of these lists contain three objects:
 \itemize{
  \item coefficients: An object containing the coefficients of the principal
  components used in the model, completely similar to the "coefficients"
  from the results of lm()
- \item p.val: The uncorrected anova pvalue of the model
+ \item p.val: The uncorrected anova p-value of the model
  \item r.sq: The coefficient of determination between the real total expression
  values and the imputed GReX, retrived from summary(model)$r.squared
+ \item corrected.p.val: The p-value of the model, corrected for multiple
+ testing with benjamini-hochberg procedure 
 }
 }
 \description{
-Fit a linear model and compute ANOVA p value
+Fit linear models and compute ANOVA p-values
 }
 \examples{
 if (interactive()) {

@@ -77,6 +77,11 @@
 #'  the expressed gene y, computed as pearson^2
 #'  \item cor.test.p.val: the p-value of the cor.test() between the real expression values
 #'  and the imputed GReX for the cross-validation i on the expressed gene y
+#'  \item model.p.val: The uncorrected anova pvalue of the model
+#'  \item model.corrected.p.val: The p-value of the model, corrected for
+#'  multiple testing with benjamini-hochberg procedure
+#'  \item model.r.sq: the model's coefficient of determination (R^2) on the
+#'  training data
 #' }
 #' @import MultiAssayExperiment SummarizedExperiment BiocParallel crayon
 #' @export
@@ -139,6 +144,12 @@ affiXcanTrain <- function(exprMatrix, assay, tbaPaths, regionAssoc, cov=NULL,
             cat(bold(cyan("\t-->")), green("Computing Cross-Validated R^2\n"))
             correlation <- computeRSquared(exprMatrix, imputedExpr, assay,
                                          testingSamples, BPPARAM)
+            for (gene in names(correlation)) {
+                correlation[[gene]]$model.p.val <- bs[[gene]]$p.val
+                correlation[[gene]]$model.corrected.p.val <-
+                    bs[[gene]]$corrected.p.val
+                correlation[[gene]]$model.r.sq <- bs[[gene]]$r.sq
+            }
             trainingOutput[[i]] <- correlation
         }
         else {

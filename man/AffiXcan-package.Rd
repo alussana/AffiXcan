@@ -17,7 +17,7 @@ individuals where the real total expression values, the Total Binding Affinity
 (TBA) values for a set of genomic regions, and the covariates of the population
 genetic structure, are known. AffiXcan performs a principal component analysis
 (PCA) on the TBA values to fit a linear model using the formula: GReX ~ PC1 +
-PC2 + PC3 + ... + COV1 + COV2 + COV3. Associations between the expressed genes
+PC2 + PC3 + ... + COV1 + COV2 + ... . Associations between the expressed genes
 and the regulatory regions, on which the TBA values have to be computed, are
 needed. TBA can be computed using "vcf_rider" software (see references)
 }

@@ -1,3 +1,29 @@
+CHANGES IN VERSION 1.3.7
+------------------------
+
+UPDATED VIGNETTE
+
+    o Package vignette has been updated to address the new features
+
+ALSO MODELS' P-VALUES AND RHO ARE RETURNED IN CROSS-VALIDATION
+
+    o For each fold, for each gene for which a GReX could be imputed, the
+      following values are now returned
+        
+        o Squared correlation of the model's predictions with training data
+
+        o P-value of the model
+
+        o Corrected p-value of the model with benjamini-hochberg procedure
+
+        o Correlation of the model's predictions with validation data
+
+        o Squared correlation of the model's predictions with validation data
+
+        o P-value of the correlation test of the model's predictions with
+          validation data
+
+
 CHANGES IN VERSION 1.3.5
 ------------------------
 
@@ -9,6 +35,7 @@ P-VALUE OF THE CORRELATION TEST
     o When using affiXcanTrain in cross-validation mode, three main values
       for each gene are therefore returned: rho and rho squared (see changes
       in v 1.3.1), and the p-value of cor.test()
+
 
 CHANGES IN VERSION 1.3.3
 ------------------------
