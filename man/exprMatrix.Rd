@@ -4,7 +4,9 @@
 \name{exprMatrix}
 \alias{exprMatrix}
 \title{Expression data of two genes for 229 individuals}
-\format{An object of class \code{SummarizedExperiment}.}
+\format{
+An object of class \code{SummarizedExperiment}.
+}
 \source{
 \url{https://www.ebi.ac.uk/arrayexpress/files/E-GEUV-3/}
 }

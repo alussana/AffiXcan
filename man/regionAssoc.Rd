@@ -4,7 +4,9 @@
 \name{regionAssoc}
 \alias{regionAssoc}
 \title{Associations between regulatory regions and expressed genes}
-\format{An object of class \code{data.frame}}
+\format{
+An object of class \code{data.frame}
+}
 \usage{
 data(regionAssoc)
 }
@@ -18,7 +20,7 @@ The object consists in a data.frame with two columns: for every
 For the illustrative purpose there are only two expressed genes:
 "ENSG00000139269.2" and "ENSG00000256377.1" (the same names are used in the
 SummarizedExperiment object containing the expression matrix, see
-help(exprMatrix) ).
+help(exprMatrix) ). 
 
 For every gene, the associated regulatory regions were retrieved among the
 enhancers predicted by preSTIGE, a tool developed by O. Corradin et al.

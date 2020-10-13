@@ -4,8 +4,13 @@
 \alias{computeRSquared}
 \title{Compute R and R^2 between rows of two SummarizedExperiment assays}
 \usage{
-computeRSquared(realExpr, imputedExpr, assay, testingSamples = NULL,
-  BPPARAM = bpparam())
+computeRSquared(
+  realExpr,
+  imputedExpr,
+  assay,
+  testingSamples = NULL,
+  BPPARAM = bpparam()
+)
 }
 \arguments{
 \item{realExpr}{A SummarizedExperiment object containing expression data}

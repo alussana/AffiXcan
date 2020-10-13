@@ -4,8 +4,13 @@
 \alias{affiXcanPcs}
 \title{Compute PCs in MultiAssayExperiment objects using eigenvectors given by user}
 \usage{
-affiXcanPcs(tbaPaths, affiXcanTraining, scale, BPPARAM = bpparam(),
-  testingSamples = NULL)
+affiXcanPcs(
+  tbaPaths,
+  affiXcanTraining,
+  scale,
+  BPPARAM = bpparam(),
+  testingSamples = NULL
+)
 }
 \arguments{
 \item{tbaPaths}{A vector of strings, which are the paths to

@@ -4,8 +4,17 @@
 \alias{affiXcanTrain}
 \title{Train the model needed to impute a GReX for each gene}
 \usage{
-affiXcanTrain(exprMatrix, assay, tbaPaths, regionAssoc, cov = NULL,
-  varExplained = 80, scale = TRUE, BPPARAM = bpparam(), kfold = 1)
+affiXcanTrain(
+  exprMatrix,
+  assay,
+  tbaPaths,
+  regionAssoc,
+  cov = NULL,
+  varExplained = 80,
+  scale = TRUE,
+  BPPARAM = bpparam(),
+  kfold = 1
+)
 }
 \arguments{
 \item{exprMatrix}{A SummarizedExperiment object containing expression data}

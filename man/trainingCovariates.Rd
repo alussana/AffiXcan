@@ -4,7 +4,9 @@
 \name{trainingCovariates}
 \alias{trainingCovariates}
 \title{Covariates of the population structure for 229 individuals}
-\format{An object of class \code{data.frame}}
+\format{
+An object of class \code{data.frame}
+}
 \usage{
 data(trainingCovariates)
 }

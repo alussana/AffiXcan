@@ -4,8 +4,7 @@
 \alias{affiXcanImpute}
 \title{Impute a GReX for each gene for which a model was generated}
 \usage{
-affiXcanImpute(tbaPaths, affiXcanTraining, scale = TRUE,
-  BPPARAM = bpparam())
+affiXcanImpute(tbaPaths, affiXcanTraining, scale = TRUE, BPPARAM = bpparam())
 }
 \arguments{
 \item{tbaPaths}{A vector of strings, which are the paths to

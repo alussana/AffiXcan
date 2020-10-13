@@ -4,8 +4,15 @@
 \alias{affiXcanBs}
 \title{Fit linear models and compute ANOVA p-values}
 \usage{
-affiXcanBs(exprMatrix, assay, regionAssoc, pca, cov = NULL,
-  BPPARAM = bpparam(), trainingSamples)
+affiXcanBs(
+  exprMatrix,
+  assay,
+  regionAssoc,
+  pca,
+  cov = NULL,
+  BPPARAM = bpparam(),
+  trainingSamples
+)
 }
 \arguments{
 \item{exprMatrix}{A SummarizedExperiment object containing expression data}

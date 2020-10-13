@@ -4,8 +4,14 @@
 \alias{affiXcanPca}
 \title{Perform a PCA on each experiment found in MultiAssayExperiment objects}
 \usage{
-affiXcanPca(tbaPaths, varExplained = 80, scale = TRUE, regionsCount,
-  BPPARAM = bpparam(), trainingSamples)
+affiXcanPca(
+  tbaPaths,
+  varExplained = 80,
+  scale = TRUE,
+  regionsCount,
+  BPPARAM = bpparam(),
+  trainingSamples
+)
 }
 \arguments{
 \item{tbaPaths}{A vector of strings, which are the paths to
